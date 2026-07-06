@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, test, expect, vi, beforeAll } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
 
 // Mock scrollIntoView since JSDOM does not implement it
@@ -38,7 +38,7 @@ describe('StadiumPulse AI Frontend Tests', () => {
 
     // Verify it appends the user message
     expect(screen.getByText('How is the line at Gate B?')).toBeTruthy();
-    
+
     // Check for thinking loader
     expect(screen.getByText(/thinking/i)).toBeTruthy();
   });

@@ -1,5 +1,5 @@
-import pytest
 from backend.generator import simulator
+
 
 def test_initial_state():
     simulator.trigger_spike("clear")

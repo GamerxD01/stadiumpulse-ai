@@ -9,16 +9,16 @@
 
 ## 1. Requirement Coverage Map (Prompt Wars Matrix)
 
-| Brief Operational Area | Feature in StadiumPulse AI | Status |
-| :--- | :--- | :--- |
-| **🧭 Navigation** | **AI Wayfinder**: Turn-by-turn text routing instructions using simulated map paths. | **Active (Gemini Tool)** |
-| **👥 Crowd Management** | **Crowd Density Copilot**: Narrates raw turnstile counts into plain-English alerts. | **Active (Gemini Tool)** |
-| **♿ Accessibility** | **Accessibility Concierge**: Step-free navigation mode bypassing stairs/escalators. | **Active (Config Toggle)** |
-| **🚌 Transportation** | **Transit GPT**: Rideshare, rail, and bus wait time estimation with live gridlock metrics. | **Active (Gemini Tool)** |
-| **🌱 Sustainability** | **Green Ops Advisor**: Narrates post-match sustainability reports from power/water metrics. | **Active (On-Demand Gen)** |
-| **🌐 Multilingual Support** | **Auto-Lang Routing**: Natively detects and responds in Spanish, Hindi, Arabic, etc. | **Active (Native LLM)** |
-| **📊 Operational Intel** | **Shift handover briefing**: Drafts 3-bullet handover reports for supervisor transitions. | **Active (On-Demand Gen)** |
-| **🚨 Decision Support** | **Staff Copilot alerts**: Evaluates emergencies with confidence levels and reasoning. | **Active (Structured JSON)** |
+| Brief Operational Area | Feature in StadiumPulse AI | Implementation Details | Codebase File & Function |
+| :--- | :--- | :--- | :--- |
+| **🧭 Navigation** | **AI Wayfinder**: Turn-by-turn text routing instructions using simulated map paths. | Gemini Tool Calling | [orchestrator.py:get_route](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **👥 Crowd Management** | **Crowd Density Copilot**: Narrates raw turnstile counts into plain-English alerts. | Gemini Tool Calling | [orchestrator.py:get_crowd_density](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **♿ Accessibility** | **Accessibility Concierge**: Step-free navigation mode bypassing stairs/escalators. | Frontend Toggle & Tool Option | [App.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/App.jsx) & [orchestrator.py](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **🚌 Transportation** | **Transit GPT**: Rideshare, rail, and bus wait time estimation with live gridlock metrics. | Gemini Tool Calling | [orchestrator.py:get_transit_status](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **🌱 Sustainability** | **Green Ops Advisor**: Narrates post-match sustainability reports from power/water metrics. | On-Demand Report Gen | [main.py:get_sustainability_briefing](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
+| **🌐 Multilingual Support** | **Auto-Lang Routing**: Natively detects and responds in Spanish, Hindi, Arabic, etc. | Native LLM Language Logic | [orchestrator.py:SYSTEM_INSTRUCTION](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **📊 Operational Intel** | **Shift handover briefing**: Drafts 3-bullet handover reports for supervisor transitions. | On-Demand Briefing Gen | [main.py:get_shift_briefing](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
+| **🚨 Decision Support** | **Staff Copilot alerts**: Evaluates emergencies with confidence levels and reasoning. | Structured JSON Safety Plans | [orchestrator.py:evaluate_alerts](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 
 ---
 
