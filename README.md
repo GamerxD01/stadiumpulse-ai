@@ -139,5 +139,3 @@ Open [http://localhost:5173/](http://localhost:5173/) in your web browser.
 
 ---
 
-## 5. Live Presentation Script
-A complete 3 to 5-minute narrative script written for your judges presentation is available at [DEMO.md](DEMO.md). It outlines hook phrases, screenshot prompts, and live interactive milestones.
