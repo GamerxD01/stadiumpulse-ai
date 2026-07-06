@@ -13,10 +13,10 @@
 | :--- | :--- | :--- | :--- |
 | **🧭 Navigation** | **AI Wayfinder**: Turn-by-turn text routing instructions using simulated map paths. | Gemini Tool Calling | [orchestrator.py:get_route](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **👥 Crowd Management** | **Crowd Density Copilot**: Narrates raw turnstile counts into plain-English alerts. | Gemini Tool Calling | [orchestrator.py:get_crowd_density](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
-| **♿ Accessibility** | **Accessibility Concierge**: Step-free navigation mode bypassing stairs/escalators. | Frontend Toggle & Tool Option | [App.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/App.jsx) & [orchestrator.py](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **♿ Accessibility** | **ADA Concierge**: Step-free routes + zone-specific elevator, restroom, sensory room, and hearing loop info via dedicated `get_accessibility_info` tool. | Gemini Tool Calling + Frontend Toggle | [orchestrator.py:get_accessibility_info](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **🚌 Transportation** | **Transit GPT**: Rideshare, rail, and bus wait time estimation with live gridlock metrics. | Gemini Tool Calling | [orchestrator.py:get_transit_status](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **🌱 Sustainability** | **Green Ops Advisor**: Narrates post-match sustainability reports from power/water metrics. | On-Demand Report Gen | [main.py:get_sustainability_briefing](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
-| **🌐 Multilingual Support** | **Auto-Lang Routing**: Natively detects and responds in Spanish, Hindi, Arabic, etc. | Native LLM Language Logic | [orchestrator.py:SYSTEM_INSTRUCTION](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **🌐 Multilingual Support** | **Auto-Lang Routing**: Natively detects and responds in 15 languages — Spanish, Hindi, Arabic, French, Portuguese, Japanese, Korean, Mandarin, German, Italian, Dutch, Russian, Turkish, Swahili, English. | Native LLM Language Logic | [orchestrator.py:SYSTEM_INSTRUCTION](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) · [MULTILINGUAL.md](./MULTILINGUAL.md) |
 | **📊 Operational Intel** | **Shift handover briefing**: Drafts 3-bullet handover reports for supervisor transitions. | On-Demand Briefing Gen | [main.py:get_shift_briefing](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
 | **🚨 Decision Support** | **Staff Copilot alerts**: Evaluates emergencies with confidence levels and reasoning. | Structured JSON Safety Plans | [orchestrator.py:evaluate_alerts](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 
@@ -188,3 +188,48 @@ npm run test
 
 ## 6. Live Presentation Script
 A complete 3 to 5-minute narrative script written for your judges presentation is available at [DEMO.md](DEMO.md). It outlines hook phrases, screenshot prompts, and live interactive milestones.
+
+---
+
+## 7. FIFA World Cup 2026 — Problem Statement Alignment
+
+StadiumPulse AI was built specifically to address the FIFA World Cup 2026 problem statement. The table below maps each PS pillar directly to a concrete, implemented feature:
+
+| PS Pillar | StadiumPulse AI Implementation | Status |
+|---|---|---|
+| Navigation | `get_route()` tool — step-by-step stadium wayfinding with Gemini reasoning | ✅ Implemented |
+| Crowd Management | `get_crowd_density()` tool + Staff Copilot alert feed with AI safety plans | ✅ Implemented |
+| Accessibility | `get_accessibility_info()` tool — zone-specific ADA elevators, restrooms, sensory rooms, hearing loops | ✅ Implemented |
+| Transportation | `get_transit_status()` tool — live rail/shuttle/rideshare wait times | ✅ Implemented |
+| Sustainability | `generate_sustainability_briefing()` — AI narrative of post-match green metrics | ✅ Implemented |
+| Multilingual Assistance | Gemini auto-detects 15 languages and responds natively with no translation API | ✅ Implemented |
+| Operational Intelligence | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | ✅ Implemented |
+| Real-Time Decision Support | Live simulator + Gemini evaluate_alerts() with confidence scores and structured action plans | ✅ Implemented |
+
+> See [MULTILINGUAL.md](./MULTILINGUAL.md) for full multilingual capability documentation with example prompts in 6 languages.
+
+---
+
+## 8. Multilingual Support
+
+StadiumPulse AI supports **15 languages** with automatic zero-shot detection — no UI toggle required.
+
+| Language | Native Name |
+|---|---|
+| English | English |
+| Spanish | Español |
+| Portuguese | Português |
+| Arabic | العربية |
+| French | Français |
+| German | Deutsch |
+| Hindi | हिन्दी |
+| Japanese | 日本語 |
+| Korean | 한국어 |
+| Mandarin Chinese | 普通话 |
+| Italian | Italiano |
+| Dutch | Nederlands |
+| Russian | Русский |
+| Turkish | Türkçe |
+| Swahili | Kiswahili |
+
+See [MULTILINGUAL.md](./MULTILINGUAL.md) for example interactions and technical implementation details.

@@ -1,3 +1,11 @@
+/**
+ * @fileoverview useSimulatorState — React hook managing live stadium state polling.
+ *
+ * Polls the FastAPI backend every 4 seconds for real-time crowd density,
+ * transit status, incidents, and weather. Falls back to a deterministic local
+ * mock simulator (driftMockState) when the server is offline.
+ */
+
 import { useState, useEffect } from 'react';
 import * as api from '../services/api';
 
@@ -32,6 +40,13 @@ const initialMockState = {
   weather: { temp: 24.5, condition: 'Partly Cloudy', humidity: 60 }
 };
 
+/**
+ * Computes a locally-drifted clone of the stadium state for offline simulation.
+ *
+ * @param {Object} baseState - The current stadium state snapshot to mutate from.
+ * @param {'crowd'|'medical'|'transit'|'clear'} spike - Active spike type controlling zone targets.
+ * @returns {Object} A new state object with randomised density and transit fluctuations applied.
+ */
 export default function useSimulatorState() {
   const [stadiumState, setStadiumState] = useState(initialMockState);
   const [isServerOffline, setIsServerOffline] = useState(false);
@@ -115,6 +130,10 @@ export default function useSimulatorState() {
     return newState;
   };
 
+  /**
+   * Fetches the latest simulator state from the backend and updates local state.
+   * On failure, enables offline mode and applies a local drift tick instead.
+   */
   async function checkStatus() {
     try {
       const data = await api.fetchStatus();
@@ -126,6 +145,13 @@ export default function useSimulatorState() {
     }
   }
 
+  /**
+   * Triggers a named spike on the backend (or locally when offline).
+   * Updates activeSpikeType immediately so the mock loop targets the right zones.
+   *
+   * @param {'crowd'|'medical'|'transit'|'clear'} type - The incident type to simulate.
+   * @returns {Promise<void>}
+   */
   const triggerSimulatorSpike = async (type) => {
     setActiveSpikeType(type);
     if (isServerOffline) {

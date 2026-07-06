@@ -1,3 +1,5 @@
+"""Tests for FastAPI route validation, middleware, and simulator spike endpoints."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -119,3 +121,61 @@ def test_simulator_clear_resolves_to_baseline():
     # Baseline for all zones should reset to 45
     assert state2["crowd_density"]["Gate B"] == 45
     assert len(state2["incidents"]) == 0
+
+
+# ---------------------------------------------------------------------------
+# Additional coverage: root, transit spike, medical spike
+# ---------------------------------------------------------------------------
+
+
+def test_root_endpoint_returns_welcome_message():
+    """Root endpoint returns a welcome message with API info."""
+    response = client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert "StadiumPulse" in data["message"]
+
+
+def test_transit_spike_trigger():
+    """Transit spike endpoint sets Train to Extreme congestion."""
+    client.post("/api/trigger-spike", json={"spike_type": "clear"})
+    response = client.post("/api/trigger-spike", json={"spike_type": "transit"})
+    assert response.status_code == 200
+    state = response.json()["state"]
+    assert state["transit_status"]["Train"]["congestion"] == "Extreme"
+    assert state["transit_status"]["Train"]["wait_time_mins"] == 45
+    client.post("/api/trigger-spike", json={"spike_type": "clear"})
+
+
+def test_medical_spike_trigger():
+    """Medical spike endpoint creates one medical incident."""
+    client.post("/api/trigger-spike", json={"spike_type": "clear"})
+    response = client.post("/api/trigger-spike", json={"spike_type": "medical"})
+    assert response.status_code == 200
+    state = response.json()["state"]
+    assert len(state["incidents"]) == 1
+    assert state["incidents"][0]["type"] == "medical"
+    client.post("/api/trigger-spike", json={"spike_type": "clear"})
+
+
+def test_security_headers_present():
+    """Security middleware injects X-Frame-Options and X-Content-Type-Options headers."""
+    response = client.get("/api/status")
+    assert response.status_code == 200
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert "Referrer-Policy" in response.headers
+
+
+def test_rate_limit_middleware_returns_429_after_limit():
+    """Rate limiter returns 429 after 40 requests in the rolling window."""
+    # Use a new TestClient without raise_server_exceptions to read 429 responses
+    test_client = TestClient(app, raise_server_exceptions=False)
+    responses = []
+    for _ in range(45):
+        r = test_client.get("/api/status")
+        responses.append(r.status_code)
+    assert 429 in responses, "Expected at least one 429 after 40 requests"
+
+

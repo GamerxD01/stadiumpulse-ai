@@ -1,6 +1,22 @@
+/**
+ * @fileoverview useAlerts — React hook that manages Staff Copilot safety alert polling.
+ *
+ * Polls the FastAPI backend for AI-evaluated incident alerts every 4 seconds.
+ * Falls back to locally-computed mock alerts when the server is unreachable.
+ * Also provides the explainIncidentAlert action which fetches volunteer-friendly
+ * explanations for individual alerts in the selected language.
+ */
+
 import { useState, useEffect } from 'react';
 import * as api from '../services/api';
 
+/**
+ * Returns a set of pre-computed mock alerts for the given spike type.
+ * Used as an offline fallback when the backend is unreachable.
+ *
+ * @param {'crowd'|'medical'|'transit'|'clear'} spike - The active spike type.
+ * @returns {Array<Object>} Array of alert objects matching the StaffAlertModel schema.
+ */
 const getLocalAlerts = (spike) => {
   if (spike === 'crowd') {
     return [
@@ -60,12 +76,23 @@ const getLocalAlerts = (spike) => {
   return [];
 };
 
+/**
+ * React hook managing Staff Copilot alert polling and per-alert explanation state.
+ *
+ * @param {boolean} isServerOffline - Whether the backend is currently unreachable.
+ * @param {'crowd'|'medical'|'transit'|'clear'} activeSpikeType - The currently active spike type.
+ * @returns {{ alerts: Array<Object>, explainingAlertId: string|null, alertExplanation: string, loadingExplanation: boolean, setExplainingAlertId: Function, explainIncidentAlert: Function }}
+ */
 export default function useAlerts(isServerOffline, activeSpikeType) {
   const [alerts, setAlerts] = useState([]);
   const [explainingAlertId, setExplainingAlertId] = useState(null);
   const [alertExplanation, setAlertExplanation] = useState('');
   const [loadingExplanation, setLoadingExplanation] = useState(false);
 
+  /**
+   * Fetches fresh alerts from the backend or falls back to local mock alerts.
+   * Automatically called on mount and every 4 seconds thereafter.
+   */
   async function checkAlerts() {
     try {
       if (isServerOffline) {
@@ -79,6 +106,14 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
     }
   }
 
+  /**
+   * Fetches a volunteer-friendly explanation for a specific alert.
+   * Shows an offline mock explanation when the backend is unreachable.
+   *
+   * @param {Object} alert - The alert object to explain (must have incident_id field).
+   * @param {string} [language='English'] - Target language for the explanation text.
+   * @returns {Promise<void>}
+   */
   const explainIncidentAlert = async (alert, language = 'English') => {
     setExplainingAlertId(alert.incident_id);
     setLoadingExplanation(true);

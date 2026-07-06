@@ -111,25 +111,136 @@ def get_transit_status(route_or_station: str) -> str:
     })
 
 
+def get_accessibility_info(zone: str) -> str:
+    """Gets zone-specific ADA accessibility information for MetLife Stadium.
+
+    Returns elevator locations, ADA restrooms, sensory rooms, and wheelchair
+    drop-off points for the requested zone. Use this tool when a fan asks about
+    accessibility facilities, wheelchair access, hearing loops, sensory areas,
+    or ADA restroom locations.
+
+    Args:
+        zone: Stadium zone name (e.g. 'Gate A', 'Concourse East', 'Seating Bowl').
+
+    Returns:
+        JSON string with accessibility facility details for the requested zone.
+    """
+    zone_upper = zone.upper()
+
+    ACCESSIBILITY_DATA: Dict[str, Dict[str, Any]] = {
+        "GATE A": {
+            "elevators": ["Elevator A1 (North Lobby, Level 1→4)", "Elevator A2 (South Entry, Level 1→2)"],
+            "ada_restrooms": ["Concourse Level 1 — Gate A North", "Concourse Level 2 — Section 101"],
+            "wheelchair_dropoff": "Blue ADA Dropoff Lane — Gate A East Entrance",
+            "sensory_room": None,
+            "hearing_loop": "Available at Guest Services booth — Gate A",
+        },
+        "GATE B": {
+            "elevators": ["Elevator B1 (West Lobby, Level 1→3)"],
+            "ada_restrooms": ["Concourse Level 1 — Gate B West"],
+            "wheelchair_dropoff": "ADA Dropoff Zone — Gate B Loading Bay",
+            "sensory_room": None,
+            "hearing_loop": "Available at Guest Services booth — Gate B",
+        },
+        "CONCOURSE EAST": {
+            "elevators": ["Elevator CE1 (Main Hall, Level 1→3)", "Elevator CE2 (Annex, Level 1→2)"],
+            "ada_restrooms": ["Concourse East Level 1", "Concourse East Level 2 — near Section 120"],
+            "wheelchair_dropoff": "ADA Zone — Concourse East Service Entrance",
+            "sensory_room": "Quiet Room CE-S1 — Concourse East Level 2 (noise-cancelling, low-light)",
+            "hearing_loop": "Induction loop enabled throughout Concourse East",
+        },
+        "SEATING BOWL": {
+            "elevators": ["Elevator SB1 (NW Corner)", "Elevator SB2 (SE Corner)", "Elevator SB3 (SW Corner)"],
+            "ada_restrooms": ["ADA Restroom — Row 1 Aisle 12", "ADA Restroom — Row 1 Aisle 30"],
+            "wheelchair_dropoff": "Wheelchair seating sections 104, 110, 120, 130 — direct aisle access",
+            "sensory_room": "Sensory Suite SB-Q1 — Level 1 (low-stimulation environment available upon request)",
+            "hearing_loop": "FM hearing loop transmitters available at all entry gates",
+        },
+        "TRANSIT HUB": {
+            "elevators": ["Elevator TH1 (Rail Platform Level → Street Level)"],
+            "ada_restrooms": ["Transit Hub — Accessible Restroom Block A"],
+            "wheelchair_dropoff": "Designated ADA Bus Bay — Transit Hub Bay 4",
+            "sensory_room": None,
+            "hearing_loop": "Hearing loop at Transit Hub Information Desk",
+        },
+    }
+
+    # Match the closest zone key
+    matched_key = None
+    for key in ACCESSIBILITY_DATA:
+        if key in zone_upper or zone_upper in key:
+            matched_key = key
+            break
+
+    if not matched_key:
+        return json.dumps({
+            "zone": zone,
+            "note": "Detailed accessibility info not available for this zone. Please visit the nearest Guest Services booth or call Stadium Accessibility Line: +1-800-555-ADA1.",
+            "ada_hotline": "+1-800-555-ADA1",
+        })
+
+    info = ACCESSIBILITY_DATA[matched_key]
+    info["zone"] = matched_key.title()
+    return json.dumps(info)
+
+
 # Map string name to function reference
 TOOLS_MAP: Dict[str, Callable[..., str]] = {
     "get_crowd_density": get_crowd_density,
     "get_route": get_route,
     "get_transit_status": get_transit_status,
+    "get_accessibility_info": get_accessibility_info,
 }
 
 SYSTEM_INSTRUCTION = """
-You are the StadiumPulse AI Orchestrator, the central GenAI operating system for FIFA World Cup 2026 stadiums (MetLife Stadium, East Rutherford).
+You are the StadiumPulse AI Orchestrator — the central GenAI operating system deployed across FIFA World Cup 2026 venues.
+
+FIFA World Cup 2026 Host Venues you serve:
+- MetLife Stadium, East Rutherford, NJ (primary deployment)
+- AT&T Stadium, Arlington, TX
+- SoFi Stadium, Inglewood, CA
+- Levi's Stadium, Santa Clara, CA
+- Mercedes-Benz Stadium, Atlanta, GA
+- Arrowhead Stadium, Kansas City, MO
+- Lincoln Financial Field, Philadelphia, PA
+- Rose Bowl Stadium, Pasadena, CA
+- Gillette Stadium, Foxborough, MA
+- NRG Stadium, Houston, TX
+- Hard Rock Stadium, Miami Gardens, FL
+- Estadio Azteca, Mexico City, MX
+- Estadio BBVA, Monterrey, MX
+- BMO Field, Toronto, CA
+- BC Place, Vancouver, CA
+
 Your intelligence powers:
-1. The Fan Companion Chat: Providing navigational, accessibility, and transit guidance.
-2. The Staff/Volunteer Copilot: Recommending response plans, confidence scores, and plain-English action items.
-3. The Organizer Command Center: Drafted summaries of shifts and sustainability indexes.
+1. Fan Companion Chat — Real-time navigational, accessibility, transit, and crowd guidance.
+2. Staff/Volunteer Copilot — AI-generated safety response plans with confidence scores and plain-language action items.
+3. Organizer Command Center — Shift briefings and sustainability performance summaries.
 
 CRITICAL INSTRUCTIONS:
-- Multilingual Detection: Auto-detect the user's language (Spanish, Portuguese, Arabic, French, German, Hindi, Japanese, Korean, Mandarin, etc.). You must respond natively in that exact language.
-- Tool Calling: You have access to three real-time tools: get_crowd_density, get_route, and get_transit_status. Use them to provide accurate live answers. Do NOT hallucinate density values or wait times. Always query the tool.
-- Accessibility: If the fan queries wheelchair access, step-free routes, elevators, low-sensory zones, or has difficulty climbing stairs, you MUST invoke get_route with accessibility_mode=True.
-- Personality: Helpful, professional, clear, and tournament-focused.
+
+MULTILINGUAL SUPPORT (mandatory):
+  Auto-detect the user's language from their query. Respond in the exact same language natively.
+  Fully supported languages: English, Spanish (Español), Portuguese (Português), Arabic (العربية),
+  French (Français), German (Deutsch), Hindi (हिन्दी), Japanese (日本語), Korean (한국어),
+  Mandarin Chinese (普通话), Italian (Italiano), Dutch (Nederlands), Russian (Русский),
+  Turkish (Türkçe), Swahili (Kiswahili). Never respond in English if the user wrote in another language.
+
+TOOL CALLING (mandatory):
+  You have four real-time tools. Always call the relevant tool before answering — never hallucinate values.
+  - get_crowd_density(zone): Returns live crowd density % and status for a zone.
+  - get_route(start, destination, accessibility_mode): Returns navigation instructions.
+  - get_transit_status(route_or_station): Returns live wait times and congestion for Train, Shuttle Bus, or Rideshare.
+  - get_accessibility_info(zone): Returns ADA elevator locations, accessible restrooms, sensory rooms, hearing loops, and wheelchair drop-off points for a zone.
+
+ACCESSIBILITY (mandatory):
+  If a fan mentions: wheelchair, step-free, elevator, ADA, low-sensory, hearing loop, visual impairment,
+  or difficulty with stairs — invoke BOTH get_route(accessibility_mode=True) AND get_accessibility_info(zone).
+
+CROWD SAFETY:
+  If a zone density exceeds 85%, proactively warn the fan and recommend alternative routes.
+
+PERSONALITY: Helpful, warm, professional, safety-focused, and tournament-ready.
 """
 
 
@@ -160,7 +271,7 @@ class GeminiOrchestrator:
             model=self.model,
             contents=contents,
             config=types.GenerateContentConfig(
-                tools=[get_crowd_density, get_route, get_transit_status],
+                tools=[get_crowd_density, get_route, get_transit_status, get_accessibility_info],
                 system_instruction=SYSTEM_INSTRUCTION,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             ),

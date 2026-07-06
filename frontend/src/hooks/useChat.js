@@ -1,6 +1,22 @@
+/**
+ * @fileoverview useChat — React hook managing the Fan Companion Chat state.
+ *
+ * Maintains the conversation message list, chat input text, and in-flight
+ * sending status. When the backend is offline, responds with pre-scripted
+ * locale-aware fallback answers using live mock stadium state values.
+ */
+
 import { useState } from 'react';
 import * as api from '../services/api';
 
+/**
+ * React hook that manages Fan Companion Chat message history and send actions.
+ *
+ * @param {boolean} isServerOffline - Whether the FastAPI backend is currently unreachable.
+ * @param {boolean} accessibilityMode - When true, forces step-free routing in all queries.
+ * @param {Object|null} stadiumState - Live simulator state used to enrich offline replies.
+ * @returns {{ messages: Array<{role: string, text: string, tools?: Array}>, chatInput: string, sendingChat: boolean, setChatInput: Function, setMessages: Function, handleSendMessage: Function }}
+ */
 export default function useChat(isServerOffline, accessibilityMode, stadiumState) {
   const [messages, setMessages] = useState([
     {
@@ -11,6 +27,12 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
   const [chatInput, setChatInput] = useState('');
   const [sendingChat, setSendingChat] = useState(false);
 
+  /**
+   * Sends a fan message to the Gemini orchestrator or offline fallback handler.
+   *
+   * @param {string} [textToSend=chatInput] - Text to send; defaults to current chatInput value.
+   * @returns {Promise<void>}
+   */
   const handleSendMessage = async (textToSend = chatInput) => {
     const text = textToSend.trim();
     if (!text) return;
