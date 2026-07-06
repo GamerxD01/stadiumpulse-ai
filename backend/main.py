@@ -4,7 +4,6 @@ Exposes REST API endpoints for real-time state simulator status, trigger spikes,
 Nominatim OSM geocoding, Open-Meteo weather forecast, and Gemini orchestrations.
 """
 
-import json
 import os
 import time
 from typing import Any, Dict, List
@@ -14,7 +13,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from google.genai import types
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -303,32 +301,8 @@ async def get_shift_briefing() -> Dict[str, str]:
     ]
     all_incidents = recent_incidents + [inc.model_dump() for inc in state.incidents]
 
-    prompt = f"""
-    You are the Stadium Operations Director. Based on the following incident registry from the last 4 hours, generate a concise 3-bullet point operations briefing for the upcoming shift change. Highlight key alerts, actions taken, and outstanding issues.
-
-    Incidents Registry:
-    {json.dumps(all_incidents)}
-
-    Current Stadium Densities:
-    {json.dumps(state.crowd_density)}
-    """
-    try:
-        response = orchestrator.client.models.generate_content(
-            model=orchestrator.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="You are a stadium ops chief. Output exactly 3 high-impact, professional bullet points."
-            ),
-        )
-        return {"briefing": response.text or "All clear. Normal operations active."}
-    except Exception as e:
-        return {
-            "briefing": (
-                "• Operations Stable: Normal stadium flow.\n"
-                "• No major incidents reported in last 4 hours.\n"
-                f"• Shift transition in progress. (Error generating: {str(e)})"
-            )
-        }
+    briefing = await orchestrator.generate_shift_briefing(all_incidents, state.crowd_density)
+    return {"briefing": briefing}
 
 
 @app.get("/api/briefing/sustainability")
@@ -342,29 +316,8 @@ async def get_sustainability_briefing() -> Dict[str, str]:
         "sustainability_score": "A-",
         "anomalies": "Slight waste build-up reported in Concourse East recycling bin #12",
     }
-
-    prompt = f"""
-    Draft a professional, narrative sustainability summary for the post-match report.
-    Use these raw metrics to draft the report:
-    {json.dumps(metrics)}
-    """
-    try:
-        response = orchestrator.client.models.generate_content(
-            model=orchestrator.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction="You are a green-operations advisor. Summarize sustainability performance in 2 paragraphs."
-            ),
-        )
-        return {"report": response.text or "Green metrics stable. MetLife Stadium operations within green limits."}
-    except Exception as e:
-        return {
-            "report": (
-                "MetLife Stadium operations successfully diverted 82.4% of waste, "
-                "utilizing 8,400 kWh of solar energy. Water conservation saved 14,200 gallons. "
-                f"General grade: A-. (Error generating: {str(e)})"
-            )
-        }
+    report = await orchestrator.generate_sustainability_briefing(metrics)
+    return {"report": report}
 
 
 if __name__ == "__main__":

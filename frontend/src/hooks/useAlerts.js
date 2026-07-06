@@ -1,0 +1,130 @@
+import { useState, useEffect } from 'react';
+import * as api from '../services/api';
+
+const getLocalAlerts = (spike) => {
+  if (spike === 'crowd') {
+    return [
+      {
+        incident_id: 'inc_crowd_local',
+        title: 'Critical Crowd Bottleneck at Gate B - Immediate Volunteer Response Required',
+        severity: 'Critical',
+        crowd_density: '96%',
+        recommended_actions: [
+          'Immediately deploy all available volunteers and staff to Gate B to assist with crowd management and direct patrons away from the critical bottleneck.',
+          'Prioritize identifying and aiding any individuals showing signs of distress (elderly, children, medical needs) within the congested area at Gate B.',
+          'Direct incoming patrons towards alternative entry points at Gate A, Gate C, and Gate D, clearly communicating the severe delays at Gate B.',
+          'Ensure clear pathways for emergency services are maintained near Gate B and report any incidents or individuals requiring medical attention to control immediately.'
+        ],
+        confidence_score: 95,
+        rationale:
+          'The reported bottleneck at Gate B, with flow density exceeding 4.5 persons/sq-meter and a crowd density of 96%, presents a critical safety hazard. Immediate deployment of volunteers to manage crowd flow, identify vulnerable individuals, and divert new arrivals is essential to prevent injuries and maintain order. The high confidence score reflects the specific, actionable data points on density and incident severity.'
+      }
+    ];
+  }
+  if (spike === 'medical') {
+    return [
+      {
+        incident_id: 'inc_med_local',
+        title: 'Gate C Escalator: High Severity Medical Emergency',
+        severity: 'High',
+        crowd_density: '80%',
+        recommended_actions: [
+          'Deploy first aid responders to Gate C upper level escalator immediately.',
+          'Station 2 volunteers at the bottom of the escalator to redirect incoming traffic to stairs or elevator.',
+          'Maintain clear access lane for EMS medical responders.'
+        ],
+        confidence_score: 90,
+        rationale:
+          'A collapsed patron near escalator paths creates an immediate crush/fall risk for oncoming human flows. Active redirection is required while responder treats patient.'
+      }
+    ];
+  }
+  if (spike === 'transit') {
+    return [
+      {
+        incident_id: 'inc_trans_local',
+        title: 'Transit Hub Terminal Suspension & Overcrowding',
+        severity: 'High',
+        crowd_density: '92%',
+        recommended_actions: [
+          'Direct rideshare drivers to alternative loading zone 4 to prevent total roadway gridlock.',
+          'Utilize megaphones to direct rail passengers to temporary shuttle buses.',
+          'Implement queue barricades to organize passenger buildup.'
+        ],
+        confidence_score: 88,
+        rationale:
+          'Suspension of NJ Transit services has halted passenger outflow, creating severe passenger accumulation at rail gates. Bus redirection is needed to bleed the load.'
+      }
+    ];
+  }
+  return [];
+};
+
+export default function useAlerts(isServerOffline, activeSpikeType) {
+  const [alerts, setAlerts] = useState([]);
+  const [explainingAlertId, setExplainingAlertId] = useState(null);
+  const [alertExplanation, setAlertExplanation] = useState('');
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
+
+  async function checkAlerts() {
+    try {
+      if (isServerOffline) {
+        setAlerts(getLocalAlerts(activeSpikeType));
+        return;
+      }
+      const data = await api.fetchAlerts();
+      setAlerts(data);
+    } catch {
+      setAlerts(getLocalAlerts(activeSpikeType));
+    }
+  }
+
+  const explainIncidentAlert = async (alert, language = 'English') => {
+    setExplainingAlertId(alert.incident_id);
+    setLoadingExplanation(true);
+    setAlertExplanation('');
+
+    if (isServerOffline) {
+      setTimeout(() => {
+        let expl =
+          'Hey volunteers! We have a crowded bottleneck at Gate B. Please head there immediately. Redirection: direct incoming fans away from Gate B towards Gates A, C, or D where wait lines are shorter. Look out for children or elderly fans who need assistance.';
+        if (alert.incident_id.includes('med')) {
+          expl =
+            'Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.';
+        } else if (alert.incident_id.includes('trans')) {
+          expl =
+            'Important notice: Train lines are fully suspended. Passenger backups are forming. Megaphones active. Redirect passengers to queue lines for the shuttle buses. Clear rideshare loading zones so buses can dock.';
+        }
+        setAlertExplanation(expl);
+        setLoadingExplanation(false);
+      }, 1000);
+      return;
+    }
+
+    try {
+      const data = await api.explainAlert(alert, language);
+      setAlertExplanation(data.explanation);
+    } catch {
+      setAlertExplanation('Error communicating with backend.');
+    } finally {
+      setLoadingExplanation(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkAlerts();
+    const interval = setInterval(checkAlerts, 4000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isServerOffline, activeSpikeType]);
+
+  return {
+    alerts,
+    explainingAlertId,
+    alertExplanation,
+    loadingExplanation,
+    setExplainingAlertId,
+    explainIncidentAlert
+  };
+}

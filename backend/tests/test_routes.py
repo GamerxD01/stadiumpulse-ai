@@ -111,7 +111,7 @@ def test_simulator_clear_resolves_to_baseline():
     status_response1 = client.get("/api/status")
     state1 = status_response1.json()
     assert state1["crowd_density"]["Gate B"] >= 85
-    
+
     # Trigger clear spike
     client.post("/api/trigger-spike", json={"spike_type": "clear"})
     status_response2 = client.get("/api/status")

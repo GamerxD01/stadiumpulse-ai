@@ -76,6 +76,20 @@ graph TD
     DB --> Org
 ```
 
+### Frontend Component Architecture
+
+To enforce clean separation of concerns and high maintainability, the Vite React client is structured into modular layers:
+
+*   **`src/services/`**: Centralized API service layer ([api.js](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/services/api.js)) encapsulating all HTTP fetch calls to the FastAPI backend.
+*   **`src/hooks/`**: Custom React state hooks containing logical states, polling intervals, and simulator updates ([useChat.js](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/hooks/useChat.js), [useAlerts.js](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/hooks/useAlerts.js), [useSimulatorState.js](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/hooks/useSimulatorState.js)).
+*   **`src/components/`**: Modular presentation components:
+    *   **`layout/`**: Page layout wrappers ([Header.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Header.jsx), [Navigation.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Navigation.jsx), [Footer.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Footer.jsx)).
+    *   **`fan-companion/`**: Chat boxes and user query inputs ([FanCompanionChat.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/FanCompanionChat.jsx), [ChatMessage.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/ChatMessage.jsx), [ChatInput.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/ChatInput.jsx)).
+    *   **`staff-copilot/`**: Alert plans feed and explain buttons ([StaffCopilotFeed.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/StaffCopilotFeed.jsx), [AlertCard.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/AlertCard.jsx), [ExplainAlertButton.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/ExplainAlertButton.jsx)).
+    *   **`organizer-dashboard/`**: Visualization tools and auto-report compilation panels ([OrganizerDashboard.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/OrganizerDashboard.jsx), [DensityChart.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/DensityChart.jsx), [ShiftBriefingPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/ShiftBriefingPanel.jsx), [SustainabilityPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/SustainabilityPanel.jsx)).
+    *   **`shared/`**: Reusable shared UI nodes ([LoadingSpinner.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/shared/LoadingSpinner.jsx), [ErrorBanner.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/shared/ErrorBanner.jsx)).
+*   **`src/App.jsx`**: Orchestrates top-level application tabs routing and layout structure in under 100 lines ([App.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/App.jsx)).
+
 ---
 
 ## 3. Features Showcase (Interactive Screenshots)

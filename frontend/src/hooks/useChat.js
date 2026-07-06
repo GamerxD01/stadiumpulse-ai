@@ -1,0 +1,102 @@
+import { useState } from 'react';
+import * as api from '../services/api';
+
+export default function useChat(isServerOffline, accessibilityMode, stadiumState) {
+  const [messages, setMessages] = useState([
+    {
+      role: 'model',
+      text: 'Welcome to MetLife Stadium for the FIFA World Cup 2026! How can I assist you today? (I support multilingual queries and accessible routing!)'
+    }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [sendingChat, setSendingChat] = useState(false);
+
+  const handleSendMessage = async (textToSend = chatInput) => {
+    const text = textToSend.trim();
+    if (!text) return;
+
+    const updatedMessages = [...messages, { role: 'user', text }];
+    setMessages(updatedMessages);
+    setChatInput('');
+    setSendingChat(true);
+
+    if (isServerOffline) {
+      setTimeout(() => {
+        const lower = text.toLowerCase();
+        let reply =
+          'I am processing your query. Could you please specify which section, gate, or transit option you are asking about?';
+        let tools = [];
+
+        if (lower.includes('gate b') || lower.includes('crowded')) {
+          const density = stadiumState ? stadiumState.crowd_density['Gate B'] : 38;
+          reply = `The current crowd density at Gate B is ${density}%, which is currently normal. Let me know if you need routing to less congested entrances!`;
+          tools = [{ name: 'get_crowd_density', args: { zone: 'Gate B' } }];
+        } else if (lower.includes('shuttle') || lower.includes('bus')) {
+          const waitTime = stadiumState ? stadiumState.transit_status['Shuttle Bus'].wait_time_mins : 5;
+          const congestion = stadiumState ? stadiumState.transit_status['Shuttle Bus'].congestion : 'Low';
+          reply = `The Shuttle Bus currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
+          tools = [{ name: 'get_transit_status', args: { route_or_station: 'Shuttle Bus' } }];
+        } else if (lower.includes('train')) {
+          const waitTime = stadiumState ? stadiumState.transit_status['Train'].wait_time_mins : 10;
+          const congestion = stadiumState ? stadiumState.transit_status['Train'].congestion : 'Medium';
+          reply = `The Rail Service currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
+          tools = [{ name: 'get_transit_status', args: { route_or_station: 'Train' } }];
+        } else if (
+          lower.includes('route') ||
+          lower.includes('get to') ||
+          lower.includes('cómo llegar') ||
+          lower.includes('como llegar')
+        ) {
+          const isSpanish = lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
+          if (
+            accessibilityMode ||
+            lower.includes('wheelchair') ||
+            lower.includes('elevador') ||
+            lower.includes('step-free')
+          ) {
+            reply = isSpanish
+              ? 'Ruta accesible sin escalones: Salga por la rampa izquierda, siga las señales azules ADA hacia el Elevador Noroeste y baje al Nivel 1. La salida es libre de barreras.'
+              : 'Step-free route calculated: Exit towards the Northwest Elevator Bank, take Elevator 3 down to Concourse Level 1. The path is fully ramped and wheelchair accessible.';
+            tools = [
+              { name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }
+            ];
+          } else {
+            reply = isSpanish
+              ? 'Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha.'
+              : 'Standard express route calculated: Walk up the central escalator to Level 2 Concourse and turn right towards section 102.';
+            tools = [
+              { name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }
+            ];
+          }
+        }
+
+        setMessages((prev) => [...prev, { role: 'model', text: reply, tools }]);
+        setSendingChat(false);
+      }, 1000);
+      return;
+    }
+
+    const history = updatedMessages.slice(0, -1).map((msg) => ({
+      role: msg.role,
+      text: msg.text
+    }));
+
+    try {
+      const data = await api.sendChatMessage(text, history, accessibilityMode);
+      setMessages((prev) => [...prev, { role: 'model', text: data.response, tools: data.tools_called }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: 'model', text: 'Network error. Make sure backend is running.' }]);
+    } finally {
+      setSendingChat(false);
+    }
+  };
+
+  return {
+    messages,
+    chatInput,
+    sendingChat,
+    setChatInput,
+    setMessages,
+    handleSendMessage
+  };
+}
