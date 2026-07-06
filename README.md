@@ -1,6 +1,8 @@
 # StadiumPulse AI 🏟️🤖
 ### *A Unified GenAI Operating Layer for FIFA World Cup 2026 Stadiums*
 
+**Live Deployed Application**: [stadiumpulse-ai.vercel.app](https://stadiumpulse-qn3icch8g-foxxys-projects-0b305d67.vercel.app)
+
 **StadiumPulse AI** is a single GenAI "brain" that sits behind three connected web experiences — a Fan Companion, a Staff/Volunteer Copilot, and an Organizer Command Center — turning raw stadium sensor data (crowd counts, turnstile logs, transit lines, ticket data) into real-time, multilingual, natural-language guidance for everyone inside a World Cup venue.
 
 ---

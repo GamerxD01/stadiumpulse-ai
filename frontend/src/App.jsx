@@ -6,16 +6,37 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const API_BASE = 'http://localhost:8000/api';
+// Check if running on localhost or deployed
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocalhost ? 'http://localhost:8000/api' : '/api'; // fallback relative path
+
+// --- CLIENT-SIDE SIMULATOR (for deployed environments when backend is offline) ---
+const mockZones = ["Gate A", "Gate B", "Gate C", "Gate D", "Concourse East", "Concourse West", "Seating Bowl", "Transit Hub"];
+const initialMockState = {
+  crowd_density: {
+    "Gate A": 42, "Gate B": 38, "Gate C": 45, "Gate D": 35,
+    "Concourse East": 52, "Concourse West": 48, "Seating Bowl": 60, "Transit Hub": 55
+  },
+  transit_status: {
+    "Train": { "congestion": "Medium", "wait_time_mins": 10 },
+    "Shuttle Bus": { "congestion": "Low", "wait_time_mins": 5 },
+    "Rideshare": { "congestion": "Medium", "wait_time_mins": 12 }
+  },
+  incidents: [],
+  weather: { "temp": 24.5, "condition": "Partly Cloudy", "humidity": 60 }
+};
 
 function App() {
   const [activeTab, setActiveTab] = useState('fan'); // fan, staff, organizer
   const [language, setLanguage] = useState('English');
   const [accessibilityMode, setAccessibilityMode] = useState(false);
-  const [stadiumState, setStadiumState] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [loadingAlerts, setLoadingAlerts] = useState(false);
   
+  // App States
+  const [stadiumState, setStadiumState] = useState(initialMockState);
+  const [alerts, setAlerts] = useState([]);
+  const [isServerOffline, setIsServerOffline] = useState(false);
+  const [activeSpikeType, setActiveSpikeType] = useState('clear');
+
   // Fan Chat State
   const [messages, setMessages] = useState([
     { role: 'model', text: 'Welcome to MetLife Stadium for the FIFA World Cup 2026! How can I assist you today? (I support multilingual queries and accessible routing!)' }
@@ -35,7 +56,7 @@ function App() {
   const [sustainabilityReport, setSustainabilityReport] = useState('');
   const [loadingSustainability, setLoadingSustainability] = useState(false);
 
-  // Poll stadium status and alerts every 4 seconds
+  // Poll status and alerts
   useEffect(() => {
     fetchStatus();
     fetchAlerts();
@@ -46,12 +67,77 @@ function App() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [activeSpikeType]);
 
   useEffect(() => {
-    // Scroll chat to bottom on new messages
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Client-side simulation logic for live metrics drift
+  const driftMockState = (baseState, spike) => {
+    const newState = JSON.parse(JSON.stringify(baseState));
+    
+    // Add random fluctuations to density
+    mockZones.forEach(zone => {
+      if (spike === 'crowd' && (zone === 'Gate B' || zone === 'Concourse West')) {
+        newState.crowd_density[zone] = Math.max(85, Math.min(99, newState.crowd_density[zone] + Math.floor(Math.random() * 5) - 2));
+      } else if (spike === 'transit' && zone === 'Transit Hub') {
+        newState.crowd_density[zone] = Math.max(90, Math.min(98, newState.crowd_density[zone] + Math.floor(Math.random() * 3) - 1));
+      } else {
+        newState.crowd_density[zone] = Math.max(15, Math.min(75, newState.crowd_density[zone] + Math.floor(Math.random() * 7) - 3));
+      }
+    });
+
+    // Fluctuate transit times
+    Object.keys(newState.transit_status).forEach(mode => {
+      if (spike === 'transit' && (mode === 'Train' || mode === 'Shuttle Bus')) {
+        newState.transit_status["Train"] = { "congestion": "Extreme", "wait_time_mins": 45 };
+        newState.transit_status["Shuttle Bus"] = { "congestion": "High", "wait_time_mins": 25 };
+      } else {
+        let currentWait = newState.transit_status[mode].wait_time_mins;
+        let newWait = Math.max(3, Math.min(25, currentWait + Math.floor(Math.random() * 5) - 2));
+        let congestion = newWait < 8 ? 'Low' : (newWait < 15 ? 'Medium' : 'High');
+        newState.transit_status[mode] = { congestion, wait_time_mins: newWait };
+      }
+    });
+
+    // Handle incidents
+    if (spike === 'crowd') {
+      newState.incidents = [{
+        id: 'inc_crowd_local',
+        type: 'crowd',
+        location: 'Gate B',
+        severity: 'Critical',
+        description: 'Sudden bottle-neck at Gate B turnstiles. Flow density exceeds 4.5 persons/sq-meter.',
+        timestamp: Date.now() / 1000,
+        status: 'Active'
+      }];
+    } else if (spike === 'medical') {
+      newState.incidents = [{
+        id: 'inc_med_local',
+        type: 'medical',
+        location: 'Gate C Escalator',
+        severity: 'High',
+        description: 'Elderly fan collapsed near Gate C upper level escalator. First aid responder dispatched.',
+        timestamp: Date.now() / 1000,
+        status: 'Active'
+      }];
+    } else if (spike === 'transit') {
+      newState.incidents = [{
+        id: 'inc_trans_local',
+        type: 'transit',
+        location: 'Transit Hub',
+        severity: 'High',
+        description: 'NJ Transit Rail service suspended temporarily due to switch issue. Heavy passenger buildup at boarding platforms.',
+        timestamp: Date.now() / 1000,
+        status: 'Active'
+      }];
+    } else {
+      newState.incidents = [];
+    }
+
+    return newState;
+  };
 
   const fetchStatus = async () => {
     try {
@@ -59,22 +145,83 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         setStadiumState(data);
+        setIsServerOffline(false);
+      } else {
+        throw new Error("Offline");
       }
     } catch (err) {
-      console.error('Error fetching stadium status:', err);
+      setIsServerOffline(true);
+      // Run local Javascipt simulator drift
+      setStadiumState(prev => driftMockState(prev, activeSpikeType));
     }
   };
 
   const fetchAlerts = async () => {
     try {
+      if (isServerOffline) {
+        setAlerts(getLocalAlerts(activeSpikeType));
+        return;
+      }
       const res = await fetch(`${API_BASE}/alerts`);
       if (res.ok) {
         const data = await res.json();
         setAlerts(data);
+      } else {
+        throw new Error("Offline");
       }
     } catch (err) {
-      console.error('Error fetching alerts:', err);
+      setAlerts(getLocalAlerts(activeSpikeType));
     }
+  };
+
+  const getLocalAlerts = (spike) => {
+    if (spike === 'crowd') {
+      return [{
+        incident_id: 'inc_crowd_local',
+        title: 'Critical Crowd Bottleneck at Gate B - Immediate Volunteer Response Required',
+        severity: 'Critical',
+        crowd_density: '96%',
+        recommended_actions: [
+          'Immediately deploy all available volunteers and staff to Gate B to assist with crowd management and direct patrons away from the critical bottleneck.',
+          'Prioritize identifying and aiding any individuals showing signs of distress (elderly, children, medical needs) within the congested area at Gate B.',
+          'Direct incoming patrons towards alternative entry points at Gate A, Gate C, and Gate D, clearly communicating the severe delays at Gate B.',
+          'Ensure clear pathways for emergency services are maintained near Gate B and report any incidents or individuals requiring medical attention to control immediately.'
+        ],
+        confidence_score: 95,
+        rationale: 'The reported bottleneck at Gate B, with flow density exceeding 4.5 persons/sq-meter and a crowd density of 96%, presents a critical safety hazard. Immediate deployment of volunteers to manage crowd flow, identify vulnerable individuals, and divert new arrivals is essential to prevent injuries and maintain order. The high confidence score reflects the specific, actionable data points on density and incident severity.'
+      }];
+    }
+    if (spike === 'medical') {
+      return [{
+        incident_id: 'inc_med_local',
+        title: 'Gate C Escalator: High Severity Medical Emergency',
+        severity: 'High',
+        crowd_density: '80%',
+        recommended_actions: [
+          'Deploy first aid responders to Gate C upper level escalator immediately.',
+          'Station 2 volunteers at the bottom of the escalator to redirect incoming traffic to stairs or elevator.',
+          'Maintain clear access lane for EMS medical responders.'
+        ],
+        confidence_score: 90,
+        rationale: 'A collapsed patron near escalator paths creates an immediate crush/fall risk for oncoming human flows. Active redirection is required while responder treats patient.'
+      }];
+    }
+    if (spike === 'transit') {
+      return [{
+        incident_id: 'inc_trans_local',
+        title: 'Transit Hub Terminal Suspension & Overcrowding',
+        severity: 'High',
+        crowd_density: '92%',
+        recommended_actions: [
+          'Direct rideshare drivers to alternative loading zone 4 to prevent total roadway gridlock.',
+          'Utilize megaphones to direct rail passengers to temporary shuttle buses.',
+          'Implement queue barricades to organize passenger buildup.'
+        ],
+        confidence_score: 88,
+        rationale: 'Suspension of NJ Transit services has halted passenger outflow, creating severe passenger accumulation at rail gates. Bus redirection is needed to bleed the load.'
+      }];
+    }
+    return [];
   };
 
   // Chat Submission
@@ -82,14 +229,48 @@ function App() {
     const text = textToSend.trim();
     if (!text) return;
 
-    // Add user message locally
     const updatedMessages = [...messages, { role: 'user', text }];
     setMessages(updatedMessages);
     setChatInput('');
     setSendingChat(true);
 
-    // Format history for API (Gemini expects list of dicts with role and text)
-    // Map 'model' to 'model' and 'user' to 'user'
+    if (isServerOffline) {
+      // Simulate client-side orchestrator response mapping
+      setTimeout(() => {
+        const lower = text.toLowerCase();
+        let reply = "I am processing your query. Could you please specify which section, gate, or transit option you are asking about?";
+        let tools = [];
+
+        if (lower.includes('gate b') || lower.includes('crowded')) {
+          reply = `The current crowd density at Gate B is ${stadiumState.crowd_density["Gate B"]}%, which is currently normal. Let me know if you need routing to less congested entrances!`;
+          tools = [{ name: 'get_crowd_density', args: { zone: 'Gate B' } }];
+        } else if (lower.includes('shuttle') || lower.includes('bus')) {
+          reply = `The Shuttle Bus currently has a wait time of approximately ${stadiumState.transit_status["Shuttle Bus"].wait_time_mins} minutes with ${stadiumState.transit_status["Shuttle Bus"].congestion} congestion.`;
+          tools = [{ name: 'get_transit_status', args: { route_or_station: 'Shuttle Bus' } }];
+        } else if (lower.includes('train')) {
+          reply = `The Rail Service currently has a wait time of approximately ${stadiumState.transit_status["Train"].wait_time_mins} minutes with ${stadiumState.transit_status["Train"].congestion} congestion.`;
+          tools = [{ name: 'get_transit_status', args: { route_or_station: 'Train' } }];
+        } else if (lower.includes('route') || lower.includes('get to') || lower.includes('cómo llegar') || lower.includes('como llegar')) {
+          const isSpanish = lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
+          if (accessibilityMode || lower.includes('wheelchair') || lower.includes('elevador') || lower.includes('step-free')) {
+            reply = isSpanish 
+              ? "Ruta accesible sin escalones: Salga por la rampa izquierda, siga las señales azules ADA hacia el Elevador Noroeste y baje al Nivel 1. La salida es libre de barreras."
+              : "Step-free route calculated: Exit towards the Northwest Elevator Bank, take Elevator 3 down to Concourse Level 1. The path is fully ramped and wheelchair accessible.";
+            tools = [{ name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }];
+          } else {
+            reply = isSpanish
+              ? "Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha."
+              : "Standard express route calculated: Walk up the central escalator to Level 2 Concourse and turn right towards section 102.";
+            tools = [{ name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }];
+          }
+        }
+
+        setMessages(prev => [...prev, { role: 'model', text: reply, tools }]);
+        setSendingChat(false);
+      }, 1000);
+      return;
+    }
+
     const history = updatedMessages.slice(0, -1).map(msg => ({
       role: msg.role,
       text: msg.text
@@ -122,6 +303,13 @@ function App() {
 
   // Trigger Spikes
   const triggerSpike = async (type) => {
+    setActiveSpikeType(type);
+    if (isServerOffline) {
+      // Offline mode updates local state immediately
+      setStadiumState(prev => driftMockState(prev, type));
+      setAlerts(getLocalAlerts(type));
+      return;
+    }
     try {
       await fetch(`${API_BASE}/trigger-spike`, {
         method: 'POST',
@@ -135,11 +323,26 @@ function App() {
     }
   };
 
-  // Explain Alert with GenAI
+  // Explain Alert
   const explainAlert = async (alert) => {
     setExplainingAlertId(alert.incident_id);
     setLoadingExplanation(true);
     setAlertExplanation('');
+
+    if (isServerOffline) {
+      setTimeout(() => {
+        let expl = "Hey volunteers! We have a crowded bottleneck at Gate B. Please head there immediately. Redirection: direct incoming fans away from Gate B towards Gates A, C, or D where wait lines are shorter. Look out for children or elderly fans who need assistance.";
+        if (alert.incident_id.includes('med')) {
+          expl = "Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.";
+        } else if (alert.incident_id.includes('trans')) {
+          expl = "Important notice: Train lines are fully suspended. Passenger backups are forming. Megaphones active. Redirect passengers to queue lines for the shuttle buses. Clear rideshare loading zones so buses can dock.";
+        }
+        setAlertExplanation(expl);
+        setLoadingExplanation(false);
+      }, 1000);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/explain-alert`, {
         method: 'POST',
@@ -150,7 +353,7 @@ function App() {
         const data = await res.json();
         setAlertExplanation(data.explanation);
       } else {
-        setAlertExplanation('Failed to generate explanation. Please try again.');
+        setAlertExplanation('Failed to generate explanation.');
       }
     } catch (err) {
       setAlertExplanation('Error communicating with backend.');
@@ -162,6 +365,14 @@ function App() {
   // Generate shift briefing
   const generateShiftBriefing = async () => {
     setLoadingShift(true);
+    if (isServerOffline) {
+      setTimeout(() => {
+        let msg = "• Operational briefing for shift handover:\n- Gate B turnstiles experienced a critical crowd density peak of 96%. Crowds have been successfully routed to Gates A/C/D.\n- Medical response treated an escalator incident near Gate C; escalators are back in operation.\n- Train transit congestion remains high; rideshare queues remain active at Zone 4.";
+        setShiftBriefing(msg);
+        setLoadingShift(false);
+      }, 1000);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/briefing/shift`);
       if (res.ok) {
@@ -178,6 +389,14 @@ function App() {
   // Generate sustainability briefing
   const generateSustainabilityBriefing = async () => {
     setLoadingSustainability(true);
+    if (isServerOffline) {
+      setTimeout(() => {
+        let msg = "The sustainability report indicates a solid 82.4% waste recycling diversion rate. Solar contribution added 8,400 kWh of clean power to the stadium grid. General grade: A-. One water anomaly: high usage reported at Concourse East restrooms, resolved by fixtures inspections.";
+        setSustainabilityReport(msg);
+        setLoadingSustainability(false);
+      }, 1000);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/briefing/sustainability`);
       if (res.ok) {
@@ -191,7 +410,6 @@ function App() {
     }
   };
 
-  // Predefined prompts for fan companion
   const suggestionPills = [
     { label: 'Accessible route to Section 102', value: 'How do I get to Section 102 from Gate A? I need elevator/step-free access.' },
     { label: 'Is Gate B turnstile busy?', value: 'What is the current crowd density at Gate B?' },
@@ -199,7 +417,6 @@ function App() {
     { label: '¿Cómo llegar a la salida? (ES)', value: '¿Cómo llegar a la salida principal desde el Seating Bowl en un camino sin escaleras?' }
   ];
 
-  // Helper for rendering charts
   const getChartData = () => {
     if (!stadiumState) return [];
     return Object.entries(stadiumState.crowd_density).map(([name, density]) => ({
@@ -210,6 +427,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
+      {/* Offline Mode Banner */}
+      {isServerOffline && (
+        <div className="bg-amber-600/90 text-amber-50 text-[11px] font-bold py-1.5 px-4 text-center border-b border-amber-500/30 flex items-center justify-center gap-1.5 animate-pulse">
+          <Info className="w-3.5 h-3.5" />
+          <span>Deployed Demo Mode: Local Client Simulation Active (AI fallbacks engaged, no backend server required).</span>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3">
@@ -341,7 +566,7 @@ function App() {
                 </select>
               </div>
 
-              {/* Demo Incidents Quick Peek */}
+              {/* Live Congestion */}
               <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">MetLife Live Congestion</h3>
                 {stadiumState ? (
@@ -372,7 +597,6 @@ function App() {
 
             {/* Chat Box Panel */}
             <div className="lg:col-span-3 bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 overflow-hidden h-[600px] shadow-xl">
-              {/* Chat Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-3">
                   <div className="bg-indigo-600/10 p-2 rounded-xl text-indigo-400 border border-indigo-500/20">
@@ -403,7 +627,6 @@ function App() {
                     }`}>
                       <p className="whitespace-pre-line">{msg.text}</p>
                       
-                      {/* Show Tools used if relevant */}
                       {msg.tools && msg.tools.length > 0 && (
                         <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex flex-wrap gap-2">
                           <span className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1">
@@ -434,7 +657,7 @@ function App() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Chat Suggestions Pills */}
+              {/* Chat Suggestions */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {suggestionPills.map((pill, i) => (
                   <button 
@@ -477,7 +700,7 @@ function App() {
         {/* TAB 2: STAFF & VOLUNTEER COPILOT EXPERIENCE */}
         {activeTab === 'staff' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[500px]">
-            {/* Left Control Panel: Incident Spikes */}
+            {/* Incident Spikes */}
             <div className="lg:col-span-1 flex flex-col gap-6">
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col gap-5 shadow-lg">
                 <div>
@@ -536,7 +759,7 @@ function App() {
               </div>
             </div>
 
-            {/* Right Panel: Alerts Feed & GenAI Explainer */}
+            {/* Alerts Feed */}
             <div className="lg:col-span-2 flex flex-col gap-6">
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 flex-1 shadow-lg">
                 <div>
@@ -578,14 +801,12 @@ function App() {
                             <h4 className="text-sm font-bold text-white mt-1.5">{alert.title}</h4>
                           </div>
                           
-                          {/* Confidence Score Ring */}
                           <div className="flex flex-col items-center bg-indigo-950/60 border border-indigo-900 rounded-xl px-3 py-1.5 text-center">
                             <span className="text-xs font-bold text-indigo-400">{alert.confidence_score}%</span>
                             <span className="text-[9px] text-indigo-300/80 font-medium">Confidence</span>
                           </div>
                         </div>
 
-                        {/* Suggested Actions */}
                         <div>
                           <span className="text-[11px] font-bold text-slate-400 block mb-1">Recommended Response Plan:</span>
                           <ul className="space-y-1.5">
@@ -610,7 +831,7 @@ function App() {
                           </button>
                         </div>
 
-                        {/* Explain Modal Drawer inside alert card */}
+                        {/* Explain Modal Drawer */}
                         {explainingAlertId === alert.incident_id && (
                           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mt-3 flex flex-col gap-2 relative">
                             <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -619,7 +840,7 @@ function App() {
                             </h5>
                             
                             {loadingExplanation ? (
-                              <p className="text-xs text-slate-400 animate-pulse">Drafting plain-text guidance in {language}...</p>
+                              <p className="text-xs text-slate-400 animate-pulse font-medium">Drafting plain-text guidance in {language}...</p>
                             ) : (
                               <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{alertExplanation}</p>
                             )}
@@ -645,7 +866,6 @@ function App() {
         {/* TAB 3: ORGANIZER COMMAND CENTER */}
         {activeTab === 'organizer' && (
           <div className="flex flex-col gap-6">
-            {/* Visual Charts & Status grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Density Bar Chart */}
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col gap-4 lg:col-span-2">
@@ -677,7 +897,7 @@ function App() {
                 </div>
               </div>
 
-              {/* Operations Metrics Panel */}
+              {/* Sustainability Panel */}
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col justify-between gap-4">
                 <h3 className="text-sm font-bold text-white">Sustainability & Resource Efficiency</h3>
                 
@@ -708,7 +928,7 @@ function App() {
 
             {/* GenAI Report Drafts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Shift Change Briefing */}
+              {/* Shift Handover */}
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
                 <div className="flex justify-between items-center gap-4">
                   <div>
@@ -740,7 +960,7 @@ function App() {
                 </div>
               </div>
 
-              {/* End of Day Sustainability Report */}
+              {/* Sustainability Narrative */}
               <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
                 <div className="flex justify-between items-center gap-4">
                   <div>
