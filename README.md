@@ -141,5 +141,36 @@ Open [http://localhost:5173/](http://localhost:5173/) in your web browser.
 
 ---
 
-## 5. Live Presentation Script
+## 5. Testing & Quality Assurance (Prompt Wars Scores)
+
+### Backend Pytest Suite
+We've set up a full unit test suite under `/backend/tests` covering simulator updates, tool calls, and API resilience fallback pathways.
+Run tests locally:
+```bash
+$env:PYTHONPATH="."
+.\venv\Scripts\pytest
+```
+
+### Frontend Vitest Suite
+Tested with React Testing Library and JSDOM, confirming tab switching, chat queries, and component loads do not trigger crashes.
+Run tests locally:
+```bash
+cd frontend
+npm run test
+```
+
+### Accessibility (WCAG AA compliant)
+- Added semantic landmarks (`<nav>`, `<header>`, `<main>`) for screen reader focus maps.
+- Implemented focus-visible indicators (outline offsets) to assist keyboard navigation on dark theme components.
+- Added `aria-label` tags to all forms, icon-only buttons, and checkbox controllers.
+- Integrated `aria-live="polite"` to automatically speak dynamically incoming staff alerts.
+
+### Security Hardening
+- **CORS Lock**: Restricted CORS domain routing specifically to Vercel production hosts.
+- **Input Validation**: Hardened chat message constraints and pattern limits on simulator spikes.
+- **Custom Rate-Limiter**: Implemented a rolling-window limit of 40 requests/minute to defend Gemini API quota from flood attacks.
+
+---
+
+## 6. Live Presentation Script
 A complete 3 to 5-minute narrative script written for your judges presentation is available at [DEMO.md](DEMO.md). It outlines hook phrases, screenshot prompts, and live interactive milestones.

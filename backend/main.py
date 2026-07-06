@@ -1,9 +1,12 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+import time
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from google.genai import types
 from backend.generator import simulator
@@ -11,23 +14,75 @@ from backend.orchestrator import orchestrator
 
 load_dotenv()
 
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, limit: int = 40, window: int = 60):
+        super().__init__(app)
+        self.limit = limit
+        self.window = window
+        self.requests = {}
+
+    async def dispatch(self, request: Request, call_next):
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+            
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        
+        client_requests = self.requests.get(client_ip, [])
+        client_requests = [t for t in client_requests if now - t < self.window]
+        
+        if len(client_requests) >= self.limit:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please slow down and try again later."}
+            )
+            
+        client_requests.append(now)
+        self.requests[client_ip] = client_requests
+        
+        return await call_next(request)
+
 app = FastAPI(title="StadiumPulse AI Backend")
 
-# Enable CORS for local React development
+app.add_middleware(RateLimitMiddleware, limit=40, window=60)
+
+# Restrict CORS to local development and the production domain
+CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://stadiumpulse-qn3icch8g-foxxys-projects-0b305d67.vercel.app",
+    "https://stadiumpulse-ai.vercel.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    print(f"Internal error: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal operational error occurred. The team has been notified."}
+    )
 
 # Load configuration from environment
 NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "StadiumPulseAI/1.0")
 OPEN_METEO_BASE_URL = os.getenv("OPEN_METEO_BASE_URL", "https://api.open-meteo.com/v1")
 
 class SpikeRequest(BaseModel):
-    spike_type: str  # crowd, medical, transit, clear
+    spike_type: str = Field(..., pattern="^(crowd|medical|transit|clear)$")
 
 @app.get("/")
 def read_root():
@@ -105,7 +160,7 @@ async def geocode(q: str = Query(..., description="Query location name to search
 
 # Placeholder chat endpoint (will be wired to Gemini orchestrator in Step 2)
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=500, description="Chat query text")
     history: list = []
     accessibility_mode: bool = False
 

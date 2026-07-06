@@ -469,7 +469,7 @@ function App() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl">
+        <nav className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl" aria-label="Main Navigation">
           <button 
             onClick={() => setActiveTab('fan')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
@@ -478,7 +478,7 @@ function App() {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <Compass className="w-4 h-4" />
+            <Compass className="w-4 h-4" aria-hidden="true" />
             Fan Companion
           </button>
           <button 
@@ -489,7 +489,7 @@ function App() {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <ShieldAlert className="w-4 h-4" />
+            <ShieldAlert className="w-4 h-4" aria-hidden="true" />
             Staff Copilot Alert
             {alerts.length > 0 && (
               <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
@@ -505,10 +505,10 @@ function App() {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" aria-hidden="true" />
             Organizer Panel
           </button>
-        </div>
+        </nav>
       </header>
 
       {/* Main Container */}
@@ -535,6 +535,7 @@ function App() {
                       type="checkbox" 
                       checked={accessibilityMode} 
                       onChange={() => setAccessibilityMode(!accessibilityMode)}
+                      aria-label="Toggle step-free accessible routes only"
                       className="sr-only peer" 
                     />
                     <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -554,6 +555,7 @@ function App() {
                 <select 
                   value={language} 
                   onChange={(e) => setLanguage(e.target.value)}
+                  aria-label="Select chat language"
                   className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-indigo-500 transition duration-150 cursor-pointer"
                 >
                   <option value="English">English</option>
@@ -611,8 +613,9 @@ function App() {
                   onClick={() => setMessages([{ role: 'model', text: 'Chat history cleared. How can I help you today?' }])}
                   className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
                   title="Clear history"
+                  aria-label="Clear chat history"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
 
@@ -681,12 +684,14 @@ function App() {
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Ask StadiumPulse AI..."
+                  aria-label="Chat query input"
                   className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-indigo-600 transition"
                   disabled={sendingChat}
                 />
                 <button 
                   onClick={() => handleSendMessage()}
                   disabled={sendingChat}
+                  aria-label="Send Message"
                   className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white p-3.5 rounded-xl transition flex items-center justify-center shadow-lg shadow-indigo-500/10"
                 >
                   <Send className="w-4 h-4" />
@@ -761,7 +766,7 @@ function App() {
 
             {/* Alerts Feed */}
             <div className="lg:col-span-2 flex flex-col gap-6">
-              <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 flex-1 shadow-lg">
+              <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 flex-1 shadow-lg" aria-live="polite">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 text-red-400" />
