@@ -29,6 +29,10 @@ OPEN_METEO_BASE_URL = os.getenv("OPEN_METEO_BASE_URL", "https://api.open-meteo.c
 class SpikeRequest(BaseModel):
     spike_type: str  # crowd, medical, transit, clear
 
+@app.get("/")
+def read_root():
+    return {"message": "StadiumPulse AI API is live! Access endpoints under /api/*"}
+
 @app.get("/api/status")
 def get_status():
     """Get the current live status of stadium sensors, transit, and active incidents."""
