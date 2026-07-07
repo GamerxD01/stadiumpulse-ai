@@ -143,7 +143,7 @@ class StadiumSimulator:
             spike_type: The incident spike type to simulate ('crowd', 'medical', 'transit', or 'clear').
         """
         if spike_type == "clear":
-            self._clear_all()
+            self.clear_all()
             return
 
         self.spike_active = True
@@ -207,7 +207,7 @@ class StadiumSimulator:
                 )
             )
 
-    def _clear_all(self) -> None:
+    def clear_all(self) -> None:
         """Resets all spike state, incidents, and crowd metrics to baseline values."""
         self.spike_active = False
         self.spike_type = None

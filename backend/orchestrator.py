@@ -426,6 +426,16 @@ class GeminiOrchestrator:
             text = msg.get("text", "")
             contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
 
+        # Proactively check simulator crowd density and inject safety warnings
+        state = simulator.get_state()
+        overcrowded = [zone for zone, density in state.crowd_density.items() if density > 85]
+        if overcrowded:
+            zones_str = ", ".join(overcrowded)
+            user_message += (
+                f"\n(Note: The following zones currently exceed 85% density: {zones_str}. "
+                f"Warn the fan of this congestion and recommend they use alternative gates or concourses.)"
+            )
+
         full_message = user_message + (ACCESSIBILITY_MODE_SUFFIX if accessibility_mode else "")
         if language and language != "English":
             full_message += f" (Enforce translation: respond strictly in {language})."
@@ -476,6 +486,27 @@ class GeminiOrchestrator:
         Returns:
             Dictionary with keys 'response' (str) and 'tools_called' (list).
         """
+        # Multilingual list of ADA accessibility keywords to auto-detect step-free navigation needs
+        ada_keywords = [
+            "wheelchair", "step-free", "elevator", "ada", "low-sensory", "hearing loop",
+            "visual impairment", "stairs", "escalator", "ramp", "lift",
+            "silla de ruedas", "sin escaleras", "ascensor", "rampa", "elevador", "sensorial",
+            "cadeira de rodas", "sem escadas", "deficiência", "escadas",
+            "fauteuil roulant", "sans escalier", "ascenseur", "rampe",
+            "rollstuhl", "stufenlos", "fahrstuhl", "aufzug", "treppe",
+            "ruote", "scale", "rampa",
+            "коляск", "лифт", "пандус", "лестниц",
+            "車椅子", "エレベーター", "エスカレーター", "段差", "階段",
+            "휠체어", "엘리베이터", "에스컬레이터", "계단",
+            "轮椅", "电梯", "扶梯", "无障碍", "楼梯",
+            "tekerlekli sandalye", "asansör", "merdiven",
+            "kiti cha magurudumu", "lifti", "ngazi",
+            "العجلة", "كرسي متحرك", "المصعد", "السلالم", "درج"
+        ]
+        msg_lower = user_message.lower()
+        if any(kw in msg_lower for kw in ada_keywords):
+            accessibility_mode = True
+
         contents = self._build_conversation_contents(user_message, history, accessibility_mode, language)
         tools_called: List[Dict[str, Any]] = []
 

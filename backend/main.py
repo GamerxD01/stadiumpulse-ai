@@ -172,6 +172,32 @@ class SpikeRequest(BaseModel):
     spike_type: str = Field(..., pattern="^(crowd|medical|transit|security|safety|clear)$")
 
 
+class SustainabilityOptimizationItem(BaseModel):
+    """Structured recommendation item to optimize stadium resources."""
+
+    area: str = Field(description="The operational area, e.g. Energy, Waste, or Water")
+    recommendation: str = Field(description="Specific action recommended")
+    impact: str = Field(description="Expected eco-impact level (High, Medium, or Low)")
+
+
+class SustainabilityOptimizationsResponse(BaseModel):
+    """List response container for sustainability optimization recommendations."""
+
+    optimizations: List[SustainabilityOptimizationItem]
+
+
+class TransportationRecommendationResponse(BaseModel):
+    """Structured recommendation for fan departure mode and timing."""
+
+    recommended_mode: str = Field(
+        description="The best transport departure mode (Train, Shuttle Bus, or Rideshare)"
+    )
+    reasoning: str = Field(description="Justification reasoning for why this mode is recommended")
+    suggested_departure_window: str = Field(
+        description="A description of the best timing window to leave"
+    )
+
+
 @app.get("/")
 def read_root() -> Dict[str, str]:
     """Exposes a welcome index message at the backend root."""
@@ -284,7 +310,10 @@ async def get_alerts() -> List[Dict[str, Any]]:
 
 @app.get("/api/sustainability/optimize")
 async def optimize_sustainability() -> Dict[str, Any]:
-    """Provides operational suggestions to optimize energy, waste, and water usage based on live stadium state."""
+    """Provides operational suggestions to optimize energy, waste, and water usage based on live stadium state.
+
+    Analyzes energy, waste, and water usage based on the live stadium state.
+    """
     state = simulator.get_state()
     prompt = f"""
     Analyze the current live stadium state to recommend 3 actionable sustainability optimizations (e.g., energy conservation in low-occupancy zones, escalator power saving, water pressure scaling, waste bin sorting staff allocation).
@@ -297,15 +326,11 @@ async def optimize_sustainability() -> Dict[str, Any]:
 
     Current Weather:
     {json.dumps(state.weather)}
-
-    Output a JSON object with a list key "optimizations" containing 3 items. Each item must have:
-    - "area": the operational area (e.g., "Energy", "Waste", "Water")
-    - "recommendation": the specific action recommended
-    - "impact": expected eco-impact (e.g., "High", "Medium", "Low")
     """
 
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
+        response_schema=SustainabilityOptimizationsResponse,
         system_instruction="You are a green-operations GenAI advisor at MetLife Stadium. Optimize resource usage.",
     )
 
@@ -314,14 +339,16 @@ async def optimize_sustainability() -> Dict[str, Any]:
             {
                 "area": "Energy",
                 "recommendation": (
-                    "Activate eco-mode for escalators at lower-concourse zones since Gate B is congested."
+                    "Activate eco-mode for escalators at lower-concourse "
+                    "zones since Gate B is congested."
                 ),
                 "impact": "High",
             },
             {
                 "area": "Waste",
                 "recommendation": (
-                    "Deploy mobile recycling team to Gate A and Concourse East to manage high density zones."
+                    "Deploy mobile recycling team to Gate A and Concourse "
+                    "East to manage high density zones."
                 ),
                 "impact": "Medium",
             },
@@ -352,15 +379,11 @@ async def recommend_transportation() -> Dict[str, Any]:
 
     Current Crowd Densities:
     {json.dumps(state.crowd_density)}
-
-    Output a JSON object with:
-    - "recommended_mode": the best transport mode (Train, Shuttle Bus, or Rideshare)
-    - "reasoning": why this mode is suggested
-    - "suggested_departure_window": description of when to leave (e.g. "Leave immediately", "Wait 30 minutes")
     """
 
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
+        response_schema=TransportationRecommendationResponse,
         system_instruction="You are a transit intelligence GenAI advisor at MetLife Stadium. Optimize fan departures.",
     )
 

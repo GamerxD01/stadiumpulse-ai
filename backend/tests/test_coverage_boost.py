@@ -8,6 +8,9 @@ import json
 import time
 from unittest.mock import MagicMock, patch
 
+from fastapi.testclient import TestClient
+
+from backend.main import app
 from backend.generator import simulator
 from backend.orchestrator import (
     geocode_location,
@@ -131,7 +134,7 @@ def test_geocode_location_api_offline_fallback() -> None:
 
 def test_simulator_safety_spike() -> None:
     """Verifies simulator correctly triggers safety spike and appends safety incident."""
-    simulator._clear_all()
+    simulator.clear_all()
     simulator.trigger_spike("safety")
     assert simulator.spike_active is True
     assert simulator.spike_type == "safety"
@@ -143,7 +146,7 @@ def test_simulator_safety_spike() -> None:
 
 def test_simulator_expired_spike_resolves_incidents() -> None:
     """Verifies that simulator resolves active incidents when spike time expires."""
-    simulator._clear_all()
+    simulator.clear_all()
     simulator.trigger_spike("crowd")
     assert len(simulator.incidents) > 0
     assert all(inc.status == "Active" for inc in simulator.incidents)
@@ -160,7 +163,7 @@ def test_simulator_expired_spike_resolves_incidents() -> None:
 def test_simulator_update_walks_under_spikes() -> None:
     """Verifies that simulator update loop properly drifts values during active spikes."""
     # 1. Test crowd spike zone drift
-    simulator._clear_all()
+    simulator.clear_all()
     simulator.trigger_spike("crowd")
     simulator.update()
     # Check Gate B and Concourse West are within crowd spike bounds
@@ -168,7 +171,7 @@ def test_simulator_update_walks_under_spikes() -> None:
     assert 85 <= simulator.crowd_density["Concourse West"] <= 99
 
     # 2. Test transit spike zone drift & wait time early return
-    simulator._clear_all()
+    simulator.clear_all()
     simulator.trigger_spike("transit")
     simulator.update()
     # Check Transit Hub is within transit spike bounds
@@ -180,10 +183,6 @@ def test_simulator_update_walks_under_spikes() -> None:
 
 def test_sustainability_optimize_endpoint() -> None:
     """Verifies GET /api/sustainability/optimize returns optimization suggestions."""
-    from fastapi.testclient import TestClient
-
-    from backend.main import app
-
     client = TestClient(app)
     mock_resp = MagicMock()
     mock_resp.text = json.dumps(
@@ -202,10 +201,6 @@ def test_sustainability_optimize_endpoint() -> None:
 
 def test_transportation_recommend_endpoint() -> None:
     """Verifies GET /api/transportation/recommend returns recommendations."""
-    from fastapi.testclient import TestClient
-
-    from backend.main import app
-
     client = TestClient(app)
     mock_resp = MagicMock()
     mock_resp.text = json.dumps(
@@ -223,10 +218,6 @@ def test_transportation_recommend_endpoint() -> None:
 
 def test_sustainability_optimize_endpoint_fallback() -> None:
     """Verifies GET /api/sustainability/optimize returns static recommendations on exception."""
-    from fastapi.testclient import TestClient
-
-    from backend.main import app
-
     client = TestClient(app)
 
     with patch(
@@ -243,10 +234,6 @@ def test_sustainability_optimize_endpoint_fallback() -> None:
 
 def test_transportation_recommend_endpoint_fallback() -> None:
     """Verifies GET /api/transportation/recommend returns computed recommendations on exception."""
-    from fastapi.testclient import TestClient
-
-    from backend.main import app
-
     client = TestClient(app)
 
     with patch(
