@@ -195,6 +195,25 @@ TOOLS_MAP: Dict[str, Callable[..., str]] = {
     "get_accessibility_info": get_accessibility_info,
 }
 
+# ---------------------------------------------------------------------------
+# Orchestrator-level constants
+# ---------------------------------------------------------------------------
+
+#: Gemini model identifier used for all inference calls.
+GEMINI_MODEL: str = "gemini-2.5-flash"
+
+#: Maximum number of tool-call → model iterations before forcing a final response.
+MAX_TOOL_ITERATIONS: int = 5
+
+#: Suffix appended to the user message when accessibility mode is active.
+ACCESSIBILITY_MODE_SUFFIX: str = " (Ensure accessibility mode / step-free navigation instructions are used)."
+
+#: Confidence score assigned to fallback alerts generated when the Gemini API is unavailable.
+FALLBACK_CONFIDENCE_SCORE: int = 75
+
+#: Default fallback message returned when the model produces no text output.
+NO_RESPONSE_FALLBACK: str = "I apologize, I could not formulate a response."
+
 SYSTEM_INSTRUCTION = """
 You are the StadiumPulse AI Orchestrator — the central GenAI operating system deployed across FIFA World Cup 2026 venues.
 
@@ -263,9 +282,9 @@ class GeminiOrchestrator:
     """Manages model client parameters, alerts caches, and tool loops."""
 
     def __init__(self) -> None:
-        """Initializes Gemini model and local alerts caches."""
+        """Initializes Gemini model client and local alerts caches."""
         self.client: genai.Client = genai.Client()
-        self.model: str = "gemini-2.5-flash"
+        self.model: str = GEMINI_MODEL
         self.alerts_cache: Dict[str, Dict[str, Any]] = {}
 
     def _generate_content(self, contents: List[Any]) -> Any:
@@ -280,71 +299,102 @@ class GeminiOrchestrator:
             ),
         )
 
+    def _build_conversation_contents(
+        self, user_message: str, history: List[Dict[str, str]] | None, accessibility_mode: bool
+    ) -> List[Any]:
+        """Converts message history and the current user query into a Gemini contents list.
+
+        Args:
+            user_message: The fan's current natural-language query.
+            history: Prior conversation turns as role/text pairs.
+            accessibility_mode: When True, appends the step-free routing suffix to the message.
+
+        Returns:
+            Ordered list of types.Content objects ready for model inference.
+        """
+        contents: List[Any] = []
+        for msg in history or []:
+            role = msg.get("role", "user")
+            text = msg.get("text", "")
+            contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
+
+        full_message = user_message + (ACCESSIBILITY_MODE_SUFFIX if accessibility_mode else "")
+        contents.append(types.Content(role="user", parts=[types.Part.from_text(text=full_message)]))
+        return contents
+
+    def _execute_tool_call(
+        self, tool_name: str, tool_args: Any, accessibility_mode: bool
+    ) -> str:
+        """Dispatches a single tool call and returns the JSON result string.
+
+        Args:
+            tool_name: Name of the tool function to invoke.
+            tool_args: Arguments mapping provided by the model.
+            accessibility_mode: Injected into get_route calls when True.
+
+        Returns:
+            JSON-encoded result string from the tool, or an error envelope.
+        """
+        if tool_name not in TOOLS_MAP:
+            return json.dumps({"error": f"Tool {tool_name} not found"})
+        func = TOOLS_MAP[tool_name]
+        try:
+            func_args = dict(tool_args.items())
+            if tool_name == "get_route" and accessibility_mode:
+                func_args["accessibility_mode"] = True
+            return func(**func_args)
+        except Exception as e:
+            return json.dumps({"error": f"Failed executing tool {tool_name}: {str(e)}"})
+
     async def chat(
         self, user_message: str, history: List[Dict[str, str]] | None = None, accessibility_mode: bool = False
     ) -> Dict[str, Any]:
         """Processes a chat query, executing tools if requested by the model.
 
+        Builds the conversation history, enters the tool-call loop up to
+        MAX_TOOL_ITERATIONS times, then returns the final model text along
+        with a trace of every tool that was invoked.
+
         Args:
-            user_message: Chat message text.
-            history: List of past queries and responses.
-            accessibility_mode: Explicit force flag for step-free routes.
+            user_message: Chat message text from the fan.
+            history: List of past role/text message pairs for multi-turn context.
+            accessibility_mode: When True, forces step-free route instructions.
 
         Returns:
-            Dictionary with response text and tools called details.
+            Dictionary with keys 'response' (str) and 'tools_called' (list).
         """
-        contents = []
-        if history:
-            for msg in history:
-                role = msg.get("role", "user")
-                text = msg.get("text", "")
-                contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
+        contents = self._build_conversation_contents(user_message, history, accessibility_mode)
+        tools_called: List[Dict[str, Any]] = []
 
-        full_message = user_message
-        if accessibility_mode:
-            full_message += " (Ensure accessibility mode / step-free navigation instructions are used)."
-
-        contents.append(types.Content(role="user", parts=[types.Part.from_text(text=full_message)]))
-
-        tools_called = []
         try:
             response = self._generate_content(contents)
 
             iterations = 0
-            while response.function_calls and iterations < 5:
+            while response.function_calls and iterations < MAX_TOOL_ITERATIONS:
                 iterations += 1
-                model_parts = []
-                for fc in response.function_calls:
-                    model_parts.append(types.Part.from_function_call(name=fc.name or "", args=fc.args or {}))
+
+                # Append the model's function-call turn to the conversation
+                model_parts = [
+                    types.Part.from_function_call(name=fc.name or "", args=fc.args or {})
+                    for fc in response.function_calls
+                ]
                 contents.append(types.Content(role="model", parts=model_parts))
 
+                # Execute each requested tool and collect results
                 tool_response_parts = []
                 for fc in response.function_calls:
                     tool_name = fc.name or ""
                     tool_args = fc.args or {}
                     tools_called.append({"name": tool_name, "args": dict(tool_args)})
-
-                    if tool_name in TOOLS_MAP:
-                        func = TOOLS_MAP[tool_name]
-                        try:
-                            func_args = dict(tool_args.items())
-                            if tool_name == "get_route" and accessibility_mode:
-                                func_args["accessibility_mode"] = True
-                            result_str = func(**func_args)
-                        except Exception as e:
-                            result_str = json.dumps({"error": f"Failed executing tool {tool_name}: {str(e)}"})
-                    else:
-                        result_str = json.dumps({"error": f"Tool {tool_name} not found"})
-
+                    result_str = self._execute_tool_call(tool_name, tool_args, accessibility_mode)
                     tool_response_parts.append(
                         types.Part.from_function_response(name=tool_name, response={"result": result_str})
                     )
 
                 contents.append(types.Content(role="tool", parts=tool_response_parts))
-
                 response = self._generate_content(contents)
 
-            final_text = response.text or "I apologize, I could not formulate a response."
+            final_text = response.text or NO_RESPONSE_FALLBACK
             return {"response": final_text, "tools_called": tools_called}
 
         except Exception as e:
@@ -414,7 +464,7 @@ class GeminiOrchestrator:
                         "Direct fans away from congestion zones.",
                         "Coordinate with local supervisors.",
                     ],
-                    "confidence_score": 75,
+                    "confidence_score": FALLBACK_CONFIDENCE_SCORE,
                     "rationale": f"Fallback alert created due to connection issue: {str(e)}",
                 }
                 evaluated_alerts.append(fallback)

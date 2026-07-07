@@ -24,6 +24,18 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Server tuning constants
+# ---------------------------------------------------------------------------
+
+#: Maximum API requests allowed per IP within the rolling window.
+RATE_LIMIT_REQUESTS: int = 40
+
+#: Duration (seconds) of the rolling rate-limit window.
+RATE_LIMIT_WINDOW_SECONDS: int = 60
+
+#: HTTP client timeout (seconds) used for all outbound third-party API calls.
+HTTP_CLIENT_TIMEOUT_SECONDS: float = 5.0
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Custom async in-memory rolling-window rate limiter per IP address."""
@@ -98,7 +110,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 app = FastAPI(title="StadiumPulse AI Backend")
 
 # Register custom middleware layers
-app.add_middleware(RateLimitMiddleware, limit=40, window=60)
+app.add_middleware(RateLimitMiddleware, limit=RATE_LIMIT_REQUESTS, window=RATE_LIMIT_WINDOW_SECONDS)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Restrict CORS to local development and specific deployment domains
@@ -187,7 +199,7 @@ async def get_weather(lat: float = 40.8135, lon: float = -74.0744) -> Dict[str, 
     """
     url = f"{OPEN_METEO_BASE_URL}/forecast?latitude={lat}&longitude={lon}&current_weather=true"
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=HTTP_CLIENT_TIMEOUT_SECONDS) as client:
             resp = await client.get(url)
             if resp.status_code == 200:
                 data = resp.json()
@@ -215,7 +227,7 @@ async def geocode(q: str = Query(..., description="Query location name to search
     url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&limit=1"
     headers = {"User-Agent": NOMINATIM_USER_AGENT}
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=HTTP_CLIENT_TIMEOUT_SECONDS) as client:
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 results = resp.json()

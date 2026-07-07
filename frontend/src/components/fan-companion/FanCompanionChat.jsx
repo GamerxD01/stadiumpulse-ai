@@ -3,6 +3,57 @@ import { Accessibility, Languages, Bus, MessageSquare, RefreshCw } from 'lucide-
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
+// ---------------------------------------------------------------------------
+// Module-level constants — defined outside the component so they are never
+// recreated on re-renders. Suggestion pills are static data, not component state.
+// ---------------------------------------------------------------------------
+
+/**
+ * Static suggestion pills shown below the chat input.
+ * Each entry has a short human-readable `label` and the full query `value`
+ * that is sent to the orchestrator when the pill is clicked.
+ *
+ * @type {Array<{label: string, value: string}>}
+ */
+const SUGGESTION_PILLS = [
+  {
+    label: 'Wheelchair Route Section 102',
+    value: 'How do I get to Section 102 from Gate A? I need elevator/step-free access.'
+  },
+  { label: 'Is Gate B turnstile busy?', value: 'What is the current crowd density at Gate B?' },
+  { label: 'Next train back to Manhattan', value: 'What is the wait time and status for the Train right now?' },
+  {
+    label: '¿Cómo llegar a la salida? (ES)',
+    value: '¿Cómo llegar a la salida principal desde el Seating Bowl en un camino sin escaleras?'
+  }
+];
+
+/** Message used to reset chat history to a clean slate. */
+const CLEAR_HISTORY_MESSAGE = { role: 'model', text: 'Chat history cleared. How can I help you today?' };
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+/**
+ * FanCompanionChat — Main panel for the Fan Companion tab.
+ *
+ * Renders the accessibility toggle, language selector, live transit congestion
+ * sidebar, and the multi-turn AI chat box. All state is lifted to the parent
+ * via callback props — this component is purely presentational.
+ *
+ * @param {string}   language           - Currently selected output language.
+ * @param {Function} setLanguage        - Setter to change the selected language.
+ * @param {boolean}  accessibilityMode  - Whether step-free routing is active.
+ * @param {Function} setAccessibilityMode - Setter to toggle accessibility mode.
+ * @param {Object}   stadiumState       - Live stadium state for the transit widget.
+ * @param {Array}    messages           - Ordered array of {role, text, tools?} messages.
+ * @param {Function} setMessages        - Setter to override the message list (used for clear).
+ * @param {string}   chatInput          - Current controlled input value.
+ * @param {Function} setChatInput       - Setter for the controlled input value.
+ * @param {boolean}  sendingChat        - True while an AI response is in-flight.
+ * @param {Function} handleSendMessage  - Callback to dispatch the current input as a message.
+ */
 export default function FanCompanionChat({
   language,
   setLanguage,
@@ -17,19 +68,6 @@ export default function FanCompanionChat({
   handleSendMessage
 }) {
   const chatEndRef = useRef(null);
-
-  const suggestionPills = [
-    {
-      label: 'Wheelchair Route Section 102',
-      value: 'How do I get to Section 102 from Gate A? I need elevator/step-free access.'
-    },
-    { label: 'Is Gate B turnstile busy?', value: 'What is the current crowd density at Gate B?' },
-    { label: 'Next train back to Manhattan', value: 'What is the wait time and status for the Train right now?' },
-    {
-      label: '¿Cómo llegar a la salida? (ES)',
-      value: '¿Cómo llegar a la salida principal desde el Seating Bowl en un camino sin escaleras?'
-    }
-  ];
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -141,9 +179,7 @@ export default function FanCompanionChat({
             </div>
           </div>
           <button
-            onClick={() =>
-              setMessages([{ role: 'model', text: 'Chat history cleared. How can I help you today?' }])
-            }
+            onClick={() => setMessages([CLEAR_HISTORY_MESSAGE])}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
             title="Clear history"
             aria-label="Clear chat history"
@@ -155,6 +191,8 @@ export default function FanCompanionChat({
         {/* Chat Message Scroll */}
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           {messages.map((msg, i) => (
+            // Index key is acceptable here: messages are append-only and never reordered
+            // eslint-disable-next-line react/no-array-index-key
             <ChatMessage key={i} msg={msg} />
           ))}
           {sendingChat && (
@@ -174,9 +212,9 @@ export default function FanCompanionChat({
 
         {/* Chat Suggestions */}
         <div className="flex flex-wrap gap-2 pt-2">
-          {suggestionPills.map((pill, i) => (
+          {SUGGESTION_PILLS.map((pill) => (
             <button
-              key={i}
+              key={pill.label}
               onClick={() => {
                 setChatInput(pill.value);
                 handleSendMessage(pill.value);

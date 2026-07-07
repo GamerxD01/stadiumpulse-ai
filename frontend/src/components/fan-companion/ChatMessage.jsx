@@ -31,7 +31,7 @@ export default function ChatMessage({ msg }) {
             </span>
             {msg.tools.map((tool, idx) => (
               <span
-                key={idx}
+                key={`${tool.name}-${idx}`}
                 className="bg-indigo-950/80 text-indigo-300 border border-indigo-800 text-[10px] px-2 py-0.5 rounded font-mono"
               >
                 {tool.name}({Object.keys(tool.args).join(', ')})

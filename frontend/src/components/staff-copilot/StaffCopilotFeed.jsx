@@ -132,9 +132,9 @@ export default function StaffCopilotFeed({
             </div>
           ) : (
             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-              {alerts.map((alert, idx) => (
+              {alerts.map((alert) => (
                 <AlertCard
-                  key={idx}
+                  key={alert.incident_id}
                   alert={alert}
                   language={language}
                   onExplain={onExplain}
