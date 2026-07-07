@@ -10,6 +10,29 @@
 import { useState, useEffect } from 'react';
 import * as api from '../services/api';
 
+/** Polling interval (ms) between backend alert fetches. */
+const ALERTS_POLLING_INTERVAL_MS = 4000;
+
+/** Delay (ms) before resolving the offline fallback explanation. */
+const OFFLINE_EXPLANATION_DELAY_MS = 1000;
+
+/**
+ * Pre-scripted volunteer-friendly explanations keyed by incident_id substring.
+ * Used as an offline fallback when the backend is unreachable.
+ *
+ * @type {Record<string, string>}
+ */
+const OFFLINE_EXPLANATIONS = {
+  crowd:
+    'Hey volunteers! We have a crowded bottleneck at Gate B. Please head there immediately. Redirection: direct incoming fans away from Gate B towards Gates A, C, or D where wait lines are shorter. Look out for children or elderly fans who need assistance.',
+  med:
+    'Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.',
+  trans:
+    'Important notice: Train lines are fully suspended. Passenger backups are forming. Megaphones active. Redirect passengers to queue lines for the shuttle buses. Clear rideshare loading zones so buses can dock.',
+  default:
+    'An incident has been detected. Please follow your supervisor\'s instructions and report to the nearest team lead for deployment orders.'
+};
+
 /**
  * Returns a set of pre-computed mock alerts for the given spike type.
  * Used as an offline fallback when the backend is unreachable.
@@ -121,18 +144,12 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
 
     if (isServerOffline) {
       setTimeout(() => {
-        let expl =
-          'Hey volunteers! We have a crowded bottleneck at Gate B. Please head there immediately. Redirection: direct incoming fans away from Gate B towards Gates A, C, or D where wait lines are shorter. Look out for children or elderly fans who need assistance.';
-        if (alert.incident_id.includes('med')) {
-          expl =
-            'Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.';
-        } else if (alert.incident_id.includes('trans')) {
-          expl =
-            'Important notice: Train lines are fully suspended. Passenger backups are forming. Megaphones active. Redirect passengers to queue lines for the shuttle buses. Clear rideshare loading zones so buses can dock.';
-        }
-        setAlertExplanation(expl);
+        const matchKey = Object.keys(OFFLINE_EXPLANATIONS).find(
+          (key) => key !== 'default' && alert.incident_id.includes(key)
+        );
+        setAlertExplanation(OFFLINE_EXPLANATIONS[matchKey] || OFFLINE_EXPLANATIONS.default);
         setLoadingExplanation(false);
-      }, 1000);
+      }, OFFLINE_EXPLANATION_DELAY_MS);
       return;
     }
 
@@ -147,9 +164,8 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkAlerts();
-    const interval = setInterval(checkAlerts, 4000);
+    const interval = setInterval(checkAlerts, ALERTS_POLLING_INTERVAL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isServerOffline, activeSpikeType]);

@@ -9,6 +9,18 @@
 import { useState } from 'react';
 import * as api from '../services/api';
 
+/** Delay (ms) before resolving an offline fallback chat response. */
+const OFFLINE_CHAT_DELAY_MS = 1000;
+
+/** Initial greeting shown in the Fan Companion chat on first mount. */
+const WELCOME_MESSAGE = {
+  role: 'model',
+  text: 'Welcome to MetLife Stadium for the FIFA World Cup 2026! How can I assist you today? (I support multilingual queries and accessible routing!)'
+};
+
+/** Default reply when no keyword match is found in offline mode. */
+const DEFAULT_CHAT_REPLY = 'I am processing your query. Could you please specify which section, gate, or transit option you are asking about?';
+
 /**
  * React hook that manages Fan Companion Chat message history and send actions.
  *
@@ -18,12 +30,7 @@ import * as api from '../services/api';
  * @returns {{ messages: Array<{role: string, text: string, tools?: Array}>, chatInput: string, sendingChat: boolean, setChatInput: Function, setMessages: Function, handleSendMessage: Function }}
  */
 export default function useChat(isServerOffline, accessibilityMode, stadiumState) {
-  const [messages, setMessages] = useState([
-    {
-      role: 'model',
-      text: 'Welcome to MetLife Stadium for the FIFA World Cup 2026! How can I assist you today? (I support multilingual queries and accessible routing!)'
-    }
-  ]);
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [chatInput, setChatInput] = useState('');
   const [sendingChat, setSendingChat] = useState(false);
 
@@ -45,8 +52,7 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
     if (isServerOffline) {
       setTimeout(() => {
         const lower = text.toLowerCase();
-        let reply =
-          'I am processing your query. Could you please specify which section, gate, or transit option you are asking about?';
+        let reply = DEFAULT_CHAT_REPLY;
         let tools = [];
 
         if (lower.includes('gate b') || lower.includes('crowded')) {
@@ -70,31 +76,23 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
           lower.includes('como llegar')
         ) {
           const isSpanish = lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
-          if (
-            accessibilityMode ||
-            lower.includes('wheelchair') ||
-            lower.includes('elevador') ||
-            lower.includes('step-free')
-          ) {
+          const isAccessible = accessibilityMode || lower.includes('wheelchair') || lower.includes('elevador') || lower.includes('step-free');
+          if (isAccessible) {
             reply = isSpanish
               ? 'Ruta accesible sin escalones: Salga por la rampa izquierda, siga las señales azules ADA hacia el Elevador Noroeste y baje al Nivel 1. La salida es libre de barreras.'
               : 'Step-free route calculated: Exit towards the Northwest Elevator Bank, take Elevator 3 down to Concourse Level 1. The path is fully ramped and wheelchair accessible.';
-            tools = [
-              { name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }
-            ];
+            tools = [{ name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }];
           } else {
             reply = isSpanish
               ? 'Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha.'
               : 'Standard express route calculated: Walk up the central escalator to Level 2 Concourse and turn right towards section 102.';
-            tools = [
-              { name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }
-            ];
+            tools = [{ name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }];
           }
         }
 
         setMessages((prev) => [...prev, { role: 'model', text: reply, tools }]);
         setSendingChat(false);
-      }, 1000);
+      }, OFFLINE_CHAT_DELAY_MS);
       return;
     }
 
