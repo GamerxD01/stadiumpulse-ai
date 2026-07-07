@@ -43,9 +43,7 @@ export default function OrganizerDashboard({
             </div>
           </div>
 
-          <p className="text-[10px] text-slate-500 italic">
-            Metrics updated live from MetLife IoT sensors.
-          </p>
+          <p className="text-[10px] text-slate-500 italic">Metrics updated live from MetLife IoT sensors.</p>
         </div>
       </div>
 

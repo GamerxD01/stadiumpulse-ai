@@ -49,7 +49,7 @@ def test_weather_happy_path():
 
 def test_weather_fallback_on_exception():
     """GET /api/weather falls back to simulator mock when httpx raises a network error."""
-    with patch("backend.main.httpx.AsyncClient", side_effect=httpx.ConnectError("Network error")):
+    with patch("backend.main.httpx.AsyncClient", side_effect=Exception("Network error")):
         response = client.get("/api/weather")
 
     assert response.status_code == 200
@@ -148,7 +148,7 @@ def test_geocode_api_error_status():
 
 def test_geocode_exception_raises_500():
     """GET /api/geocode returns 500 when httpx raises a network-level error."""
-    with patch("backend.main.httpx.AsyncClient", side_effect=httpx.ConnectError("DNS failure")):
+    with patch("backend.main.httpx.AsyncClient", side_effect=Exception("DNS failure")):
         response = client.get("/api/geocode?q=MetLife+Stadium")
 
     assert response.status_code == 500

@@ -19,7 +19,8 @@ const WELCOME_MESSAGE = {
 };
 
 /** Default reply when no keyword match is found in offline mode. */
-const DEFAULT_CHAT_REPLY = 'I am processing your query. Could you please specify which section, gate, or transit option you are asking about?';
+const DEFAULT_CHAT_REPLY =
+  'I am processing your query. Could you please specify which section, gate, or transit option you are asking about?';
 
 /**
  * React hook that manages Fan Companion Chat message history and send actions.
@@ -76,17 +77,25 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
           lower.includes('como llegar')
         ) {
           const isSpanish = lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
-          const isAccessible = accessibilityMode || lower.includes('wheelchair') || lower.includes('elevador') || lower.includes('step-free');
+          const isAccessible =
+            accessibilityMode ||
+            lower.includes('wheelchair') ||
+            lower.includes('elevador') ||
+            lower.includes('step-free');
           if (isAccessible) {
             reply = isSpanish
               ? 'Ruta accesible sin escalones: Salga por la rampa izquierda, siga las señales azules ADA hacia el Elevador Noroeste y baje al Nivel 1. La salida es libre de barreras.'
               : 'Step-free route calculated: Exit towards the Northwest Elevator Bank, take Elevator 3 down to Concourse Level 1. The path is fully ramped and wheelchair accessible.';
-            tools = [{ name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }];
+            tools = [
+              { name: 'get_route', args: { start: 'Seating Bowl', destination: 'Exit', accessibility_mode: true } }
+            ];
           } else {
             reply = isSpanish
               ? 'Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha.'
               : 'Standard express route calculated: Walk up the central escalator to Level 2 Concourse and turn right towards section 102.';
-            tools = [{ name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }];
+            tools = [
+              { name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }
+            ];
           }
         }
 

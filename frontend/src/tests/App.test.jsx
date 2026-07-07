@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
 import ChatMessage from '../components/fan-companion/ChatMessage';
 import ErrorBanner from '../components/shared/ErrorBanner';
+import ExplainAlertButton from '../components/staff-copilot/ExplainAlertButton';
 
 // Mock scrollIntoView since JSDOM does not implement it
 beforeAll(() => {
@@ -141,5 +142,60 @@ describe('StadiumPulse AI Frontend Tests', () => {
     const banner = screen.getByRole('alert');
     expect(banner).toBeTruthy();
   });
-});
 
+  test('ExplainAlertButton renders trigger and toggles states correctly', () => {
+    const mockExplain = vi.fn();
+    const mockDismiss = vi.fn();
+    const alertMock = { incident_id: 'inc_test_123', title: 'Test Alert Title' };
+
+    const { rerender } = render(
+      <ExplainAlertButton
+        alert={alertMock}
+        language="English"
+        onExplain={mockExplain}
+        isExplaining={false}
+        explanation=""
+        onDismiss={mockDismiss}
+      />
+    );
+
+    // Verify trigger button renders
+    const trigger = screen.getByRole('button', { name: /Get plain-language volunteer explanation/i });
+    expect(trigger).toBeTruthy();
+
+    // Click trigger and verify callback is called
+    fireEvent.click(trigger);
+    expect(mockExplain).toHaveBeenCalledWith(alertMock, 'English');
+
+    // Rerender in explaining/loading state
+    rerender(
+      <ExplainAlertButton
+        alert={alertMock}
+        language="English"
+        onExplain={mockExplain}
+        isExplaining={true}
+        explanation=""
+        onDismiss={mockDismiss}
+      />
+    );
+    expect(screen.getByText(/Drafting plain-text guidance/i)).toBeTruthy();
+
+    // Rerender with final explanation
+    rerender(
+      <ExplainAlertButton
+        alert={alertMock}
+        language="English"
+        onExplain={mockExplain}
+        isExplaining={false}
+        explanation="This is the simplified explanation."
+        onDismiss={mockDismiss}
+      />
+    );
+    expect(screen.getByText('This is the simplified explanation.')).toBeTruthy();
+
+    // Test dismiss button
+    const dismiss = screen.getByRole('button', { name: /Dismiss explanation panel/i });
+    fireEvent.click(dismiss);
+    expect(mockDismiss).toHaveBeenCalled();
+  });
+});

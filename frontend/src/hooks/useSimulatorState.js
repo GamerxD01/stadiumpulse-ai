@@ -100,7 +100,8 @@ const OFFLINE_INCIDENTS = {
       type: 'transit',
       location: 'Transit Hub',
       severity: 'High',
-      description: 'NJ Transit Rail service suspended temporarily due to switch issue. Heavy passenger buildup at boarding platforms.',
+      description:
+        'NJ Transit Rail service suspended temporarily due to switch issue. Heavy passenger buildup at boarding platforms.',
       timestamp: 0,
       status: 'Active'
     }
@@ -152,7 +153,10 @@ function driftMockState(baseState, spike) {
       newState.transit_status['Shuttle Bus'] = { congestion: 'High', wait_time_mins: 25 };
     } else {
       const currentWait = newState.transit_status[mode].wait_time_mins;
-      const newWait = Math.max(TRANSIT_WAIT_MIN_MINS, Math.min(TRANSIT_WAIT_MAX_MINS, currentWait + Math.floor(Math.random() * 5) - 2));
+      const newWait = Math.max(
+        TRANSIT_WAIT_MIN_MINS,
+        Math.min(TRANSIT_WAIT_MAX_MINS, currentWait + Math.floor(Math.random() * 5) - 2)
+      );
       const congestion = newWait < 8 ? 'Low' : newWait < 15 ? 'Medium' : 'High';
       newState.transit_status[mode] = { congestion, wait_time_mins: newWait };
     }
@@ -226,10 +230,12 @@ export default function useSimulatorState() {
   };
 
   useEffect(() => {
-    checkStatus(activeSpikeType);
+    const timer = setTimeout(() => checkStatus(activeSpikeType), 0);
     const interval = setInterval(() => checkStatus(activeSpikeType), POLLING_INTERVAL_MS);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [activeSpikeType]);
 
   return {

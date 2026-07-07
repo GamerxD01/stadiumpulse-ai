@@ -173,9 +173,7 @@ export default function FanCompanionChat({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">StadiumPulse Fan Companion</h3>
-              <p className="text-xs text-slate-400">
-                Ask wayfinding, transit schedules, and general stadium FAQs
-              </p>
+              <p className="text-xs text-slate-400">Ask wayfinding, transit schedules, and general stadium FAQs</p>
             </div>
           </div>
           <button
@@ -192,7 +190,6 @@ export default function FanCompanionChat({
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           {messages.map((msg, i) => (
             // Index key is acceptable here: messages are append-only and never reordered
-            // eslint-disable-next-line react/no-array-index-key
             <ChatMessage key={i} msg={msg} />
           ))}
           {sendingChat && (

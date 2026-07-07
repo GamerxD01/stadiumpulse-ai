@@ -15,7 +15,9 @@ export default function Navigation({ activeTab, setActiveTab, alertsCount = 0 })
         id="tab-fan"
         onClick={() => setActiveTab('fan')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
-          activeTab === 'fan' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          activeTab === 'fan'
+            ? 'bg-indigo-600 text-white shadow-md'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
         }`}
       >
         <Compass className="w-4 h-4" aria-hidden="true" />
@@ -28,7 +30,9 @@ export default function Navigation({ activeTab, setActiveTab, alertsCount = 0 })
         id="tab-staff"
         onClick={() => setActiveTab('staff')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
-          activeTab === 'staff' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          activeTab === 'staff'
+            ? 'bg-indigo-600 text-white shadow-md'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
         }`}
       >
         <ShieldAlert className="w-4 h-4" aria-hidden="true" />

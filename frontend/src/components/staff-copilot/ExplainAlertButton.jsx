@@ -19,14 +19,7 @@ const PANEL_TITLE = 'GenAI Jargon-Free Guide (New Volunteer Mode)';
  * @param {string}   explanation  - The returned AI explanation text, or empty string.
  * @param {Function} onDismiss    - Callback to close the explanation drawer.
  */
-export default function ExplainAlertButton({
-  alert,
-  language,
-  onExplain,
-  isExplaining,
-  explanation,
-  onDismiss
-}) {
+export default function ExplainAlertButton({ alert, language, onExplain, isExplaining, explanation, onDismiss }) {
   return (
     <div className="mt-4 pt-3.5 border-t border-slate-800 flex flex-col gap-2 relative">
       <button
@@ -61,9 +54,7 @@ export default function ExplainAlertButton({
             <HelpCircle className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
             {PANEL_TITLE}
           </h5>
-          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
-            {explanation}
-          </p>
+          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{explanation}</p>
           <button
             onClick={onDismiss}
             className="absolute top-3 right-3 text-[10px] text-slate-500 hover:text-slate-300"

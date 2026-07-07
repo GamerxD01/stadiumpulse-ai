@@ -256,9 +256,13 @@ MULTILINGUAL SUPPORT (mandatory):
 TOOL CALLING (mandatory):
   You have four real-time tools. Always call the relevant tool before answering — never hallucinate values.
   - get_crowd_density(zone): Returns live crowd density % and status for a zone.
+    * Valid zones: 'Gate A', 'Gate B', 'Concourse East', 'Seating Bowl', 'Transit Hub'.
   - get_route(start, destination, accessibility_mode): Returns navigation instructions.
+    * Start/Destination must be one of: 'Gate A', 'Gate B', 'Concourse East', 'Seating Bowl', 'Transit Hub', 'Section 102', 'Exit'.
   - get_transit_status(route_or_station): Returns live wait times and congestion for Train, Shuttle Bus, or Rideshare.
+    * Valid route_or_station modes: 'Train', 'Shuttle Bus', 'Rideshare'.
   - get_accessibility_info(zone): Returns ADA elevator locations, accessible restrooms, sensory rooms, hearing loops, and wheelchair drop-off points for a zone.
+    * Valid zones: 'Gate A', 'Gate B', 'Concourse East', 'Seating Bowl', 'Transit Hub'.
 
 ACCESSIBILITY (mandatory):
   If a fan mentions: wheelchair, step-free, elevator, ADA, low-sensory, hearing loop, visual impairment,
@@ -502,7 +506,10 @@ class GeminiOrchestrator:
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="You are a friendly volunteer supervisor. Translate the alert into simple terms."
+                    system_instruction=(
+                        "You are a friendly volunteer supervisor. Translate and explain the alert "
+                        "into simple, jargon-free terms in the requested target language."
+                    )
                 ),
             )
             return response.text or "Follow the listed recommended actions and stay safe."

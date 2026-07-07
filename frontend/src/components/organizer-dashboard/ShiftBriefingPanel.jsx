@@ -10,9 +10,7 @@ export default function ShiftBriefingPanel({ shiftBriefing, loadingShift, onGene
             <UserCheck className="w-4 h-4 text-indigo-400" aria-hidden="true" />
             Operations Shift Briefing
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            GenAI summarizes recent incident logs and operations updates
-          </p>
+          <p className="text-xs text-slate-400 mt-0.5">GenAI summarizes recent incident logs and operations updates</p>
         </div>
         <button
           onClick={onGenerateShiftBriefing}

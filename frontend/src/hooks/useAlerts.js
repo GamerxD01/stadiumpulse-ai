@@ -25,12 +25,11 @@ const OFFLINE_EXPLANATION_DELAY_MS = 1000;
 const OFFLINE_EXPLANATIONS = {
   crowd:
     'Hey volunteers! We have a crowded bottleneck at Gate B. Please head there immediately. Redirection: direct incoming fans away from Gate B towards Gates A, C, or D where wait lines are shorter. Look out for children or elderly fans who need assistance.',
-  med:
-    'Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.',
+  med: 'Team, a medical event has occurred on the Gate C upper escalator. First responders are on scene. Your job: block escalator access and guide incoming crowds to the stairs or main elevator banks on the side.',
   trans:
     'Important notice: Train lines are fully suspended. Passenger backups are forming. Megaphones active. Redirect passengers to queue lines for the shuttle buses. Clear rideshare loading zones so buses can dock.',
   default:
-    'An incident has been detected. Please follow your supervisor\'s instructions and report to the nearest team lead for deployment orders.'
+    "An incident has been detected. Please follow your supervisor's instructions and report to the nearest team lead for deployment orders."
 };
 
 /**
@@ -164,9 +163,12 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
   };
 
   useEffect(() => {
-    checkAlerts();
+    const timer = setTimeout(checkAlerts, 0);
     const interval = setInterval(checkAlerts, ALERTS_POLLING_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isServerOffline, activeSpikeType]);
 

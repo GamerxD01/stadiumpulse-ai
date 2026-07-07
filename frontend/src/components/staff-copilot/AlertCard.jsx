@@ -42,12 +42,13 @@ export default function AlertCard({
       </div>
 
       <div>
-        <span className="text-[11px] font-bold text-slate-400 block mb-1">
-          Recommended Response Plan:
-        </span>
+        <span className="text-[11px] font-bold text-slate-400 block mb-1">Recommended Response Plan:</span>
         <ul className="space-y-1.5">
           {alert.recommended_actions.map((act, i) => (
-            <li key={`${alert.incident_id}-action-${i}`} className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed">
+            <li
+              key={`${alert.incident_id}-action-${i}`}
+              className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed"
+            >
               <span className="text-indigo-500 font-bold mt-0.5">•</span>
               <span>{act}</span>
             </li>

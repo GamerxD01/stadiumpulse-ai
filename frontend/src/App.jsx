@@ -27,14 +27,11 @@ export default function App() {
     setExplainingAlertId,
     explainIncidentAlert
   } = useAlerts(isServerOffline, activeSpikeType);
-  const {
-    messages,
-    chatInput,
-    sendingChat,
-    setChatInput,
-    setMessages,
-    handleSendMessage
-  } = useChat(isServerOffline, accessibilityMode, stadiumState);
+  const { messages, chatInput, sendingChat, setChatInput, setMessages, handleSendMessage } = useChat(
+    isServerOffline,
+    accessibilityMode,
+    stadiumState
+  );
   const {
     shiftBriefing,
     loadingShift,

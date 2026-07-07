@@ -69,9 +69,7 @@ export default function StaffCopilotFeed({
             >
               <div>
                 <span className="text-xs font-bold block">2. Simulate Medical Incident</span>
-                <span className="text-[10px] text-red-400/80">
-                  Report collapsed fan at Gate C upper escalators
-                </span>
+                <span className="text-[10px] text-red-400/80">Report collapsed fan at Gate C upper escalators</span>
               </div>
               <AlertTriangle className="w-5 h-5 text-red-400" aria-hidden="true" />
             </button>
@@ -84,9 +82,7 @@ export default function StaffCopilotFeed({
             >
               <div>
                 <span className="text-xs font-bold block">3. Simulate Transit Delay</span>
-                <span className="text-[10px] text-indigo-400/80">
-                  Suspend rail service + Transit Hub gridlock
-                </span>
+                <span className="text-[10px] text-indigo-400/80">Suspend rail service + Transit Hub gridlock</span>
               </div>
               <Bus className="w-5 h-5 text-indigo-400" aria-hidden="true" />
             </button>
@@ -117,8 +113,7 @@ export default function StaffCopilotFeed({
               Live Staff Alerts (LLM-Evaluated)
             </h3>
             <p className="text-xs text-slate-400 mt-1">
-              AI analyzes raw turnstile counts and sensor alerts to generate response plans with confidence
-              scores.
+              AI analyzes raw turnstile counts and sensor alerts to generate response plans with confidence scores.
             </p>
           </div>
 
