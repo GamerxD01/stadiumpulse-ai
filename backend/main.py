@@ -37,6 +37,7 @@ RATE_LIMIT_WINDOW_SECONDS: int = 60
 #: HTTP client timeout (seconds) used for all outbound third-party API calls.
 HTTP_CLIENT_TIMEOUT_SECONDS: float = 5.0
 
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Custom async in-memory rolling-window rate limiter per IP address."""
 

@@ -7,6 +7,7 @@ evaluations, and volunteer briefings using Gemini 2.5 Flash.
 import json
 from typing import Any, Callable, Dict, List
 
+import httpx
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -104,11 +105,13 @@ def get_transit_status(route_or_station: str) -> str:
     state = simulator.get_state()
     info = state.transit_status.get(mode_clean, {"congestion": "Medium", "wait_time_mins": 10})
 
-    return json.dumps({
-        "mode": mode_clean,
-        "congestion_level": info["congestion"],
-        "wait_time_minutes": info["wait_time_mins"],
-    })
+    return json.dumps(
+        {
+            "mode": mode_clean,
+            "congestion_level": info["congestion"],
+            "wait_time_minutes": info["wait_time_mins"],
+        }
+    )
 
 
 # ADA accessibility data per MetLife Stadium zone.
@@ -181,23 +184,104 @@ def get_accessibility_info(zone: str) -> str:
             "Please visit the nearest Guest Services booth or call "
             "Stadium Accessibility Line: +1-800-555-ADA1."
         )
-        return json.dumps({
-            "zone": zone,
-            "note": note,
-            "ada_hotline": "+1-800-555-ADA1",
-        })
+        return json.dumps(
+            {
+                "zone": zone,
+                "note": note,
+                "ada_hotline": "+1-800-555-ADA1",
+            }
+        )
 
     info = dict(_ACCESSIBILITY_DATA[matched_key])  # shallow copy to avoid mutating the module constant
     info["zone"] = matched_key.title()
     return json.dumps(info)
 
 
+def get_weather_forecast(lat: float = 40.8135, lon: float = -74.0744) -> str:
+    """Gets the current weather conditions and temperature forecast for a coordinate.
+
+    Use this tool when the fan or volunteer asks about current weather, rain,
+    temperature, humidity, or conditions at MetLife Stadium or match venues.
+
+    Args:
+        lat: Latitude coordinate.
+        lon: Longitude coordinate.
+
+    Returns:
+        JSON string representing the temperature and condition forecast.
+    """
+    try:
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(url)
+            if resp.status_code == 200:
+                current = resp.json().get("current_weather", {})
+                return json.dumps(
+                    {
+                        "temp": current.get("temperature"),
+                        "windspeed": current.get("windspeed"),
+                        "weathercode": current.get("weathercode"),
+                        "time": current.get("time"),
+                        "source": "Open-Meteo API",
+                    }
+                )
+    except Exception:  # pylint: disable=broad-except
+        pass
+    state = simulator.get_state()
+    return json.dumps({**state.weather, "source": "Simulator Mock (API Offline)"})
+
+
+def geocode_location(query: str) -> str:
+    """Finds latitude and longitude coordinates for stadium gates, sections, or transit hubs.
+
+    Use this tool when the fan or staff asks for coordinates, map locations, addresses,
+    or geographic details of specific gates, stadiums, sections, or transportation.
+
+    Args:
+        query: Location query string to search (e.g. 'MetLife Stadium').
+
+    Returns:
+        JSON string containing the matched display name, latitude, and longitude.
+    """
+    try:
+        url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1"
+        headers = {"User-Agent": "StadiumPulseAI/1.0"}
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(url, headers=headers)
+            if resp.status_code == 200:
+                results = resp.json()
+                if results:
+                    loc = results[0]
+                    return json.dumps(
+                        {
+                            "name": loc.get("display_name"),
+                            "lat": float(loc.get("lat")),
+                            "lon": float(loc.get("lon")),
+                            "type": loc.get("type"),
+                            "source": "Nominatim OpenStreetMap",
+                        }
+                    )
+    except Exception:  # pylint: disable=broad-except
+        pass
+    return json.dumps(
+        {
+            "name": query,
+            "lat": 40.8135,
+            "lon": -74.0744,
+            "source": "MetLife Stadium Coordinates (Fallback)",
+        }
+    )
+
+
 # Map string name to function reference
+# Defined at module level to avoid dict reconstruction on every tool invocation.
 TOOLS_MAP: Dict[str, Callable[..., str]] = {
     "get_crowd_density": get_crowd_density,
     "get_route": get_route,
     "get_transit_status": get_transit_status,
     "get_accessibility_info": get_accessibility_info,
+    "get_weather_forecast": get_weather_forecast,
+    "geocode_location": geocode_location,
 }
 
 # ---------------------------------------------------------------------------
@@ -254,7 +338,7 @@ MULTILINGUAL SUPPORT (mandatory):
   Turkish (Türkçe), Swahili (Kiswahili). Never respond in English if the user wrote in another language.
 
 TOOL CALLING (mandatory):
-  You have four real-time tools. Always call the relevant tool before answering — never hallucinate values.
+  You have six real-time tools. Always call the relevant tool before answering — never hallucinate values.
   - get_crowd_density(zone): Returns live crowd density % and status for a zone.
     * Valid zones: 'Gate A', 'Gate B', 'Concourse East', 'Seating Bowl', 'Transit Hub'.
   - get_route(start, destination, accessibility_mode): Returns navigation instructions.
@@ -263,6 +347,8 @@ TOOL CALLING (mandatory):
     * Valid route_or_station modes: 'Train', 'Shuttle Bus', 'Rideshare'.
   - get_accessibility_info(zone): Returns ADA elevator locations, accessible restrooms, sensory rooms, hearing loops, and wheelchair drop-off points for a zone.
     * Valid zones: 'Gate A', 'Gate B', 'Concourse East', 'Seating Bowl', 'Transit Hub'.
+  - get_weather_forecast(lat, lon): Returns live temperature, wind speed, weather code for a coordinate.
+  - geocode_location(query): Returns coordinates (lat, lon) for a location query (e.g. gate, station, stadium).
 
 ACCESSIBILITY (mandatory):
   If a fan mentions: wheelchair, step-free, elevator, ADA, low-sensory, hearing loop, visual impairment,
@@ -302,7 +388,14 @@ class GeminiOrchestrator:
             model=self.model,
             contents=contents,
             config=types.GenerateContentConfig(
-                tools=[get_crowd_density, get_route, get_transit_status, get_accessibility_info],
+                tools=[
+                    get_crowd_density,
+                    get_route,
+                    get_transit_status,
+                    get_accessibility_info,
+                    get_weather_forecast,
+                    geocode_location,
+                ],
                 system_instruction=SYSTEM_INSTRUCTION,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             ),
@@ -338,9 +431,7 @@ class GeminiOrchestrator:
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=full_message)]))
         return contents
 
-    def _execute_tool_call(
-        self, tool_name: str, tool_args: Any, accessibility_mode: bool
-    ) -> str:
+    def _execute_tool_call(self, tool_name: str, tool_args: Any, accessibility_mode: bool) -> str:
         """Dispatches a single tool call and returns the JSON result string.
 
         Args:

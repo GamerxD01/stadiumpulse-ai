@@ -54,7 +54,8 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
     if (isServerOffline) {
       setTimeout(() => {
         const lower = text.toLowerCase();
-        const isSpanish = language === 'Spanish' || lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
+        const isSpanish =
+          language === 'Spanish' || lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
         let reply = isSpanish
           ? 'Estoy procesando su consulta. ¿Podría especificar de qué sección, puerta u opción de transporte está preguntando?'
           : DEFAULT_CHAT_REPLY;
@@ -66,7 +67,12 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
             ? `La densidad de multitud actual en la Puerta B es del ${density}%, lo cual es normal. ¡Dígame si necesita una ruta hacia entradas menos congestionadas!`
             : `The current crowd density at Gate B is ${density}%, which is currently normal. Let me know if you need routing to less congested entrances!`;
           tools = [{ name: 'get_crowd_density', args: { zone: 'Gate B' } }];
-        } else if (lower.includes('shuttle') || lower.includes('bus') || lower.includes('autobús') || lower.includes('autobus')) {
+        } else if (
+          lower.includes('shuttle') ||
+          lower.includes('bus') ||
+          lower.includes('autobús') ||
+          lower.includes('autobus')
+        ) {
           const waitTime = stadiumState ? stadiumState.transit_status['Shuttle Bus'].wait_time_mins : 5;
           const congestion = stadiumState ? stadiumState.transit_status['Shuttle Bus'].congestion : 'Low';
           const congestionEs = congestion === 'Low' ? 'Baja' : congestion === 'Medium' ? 'Media' : 'Alta';

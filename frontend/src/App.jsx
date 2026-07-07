@@ -43,7 +43,7 @@ export default function App() {
   } = useStaffBriefing(isServerOffline, language);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {isServerOffline && <ErrorBanner />}
 
       <Header alerts={alerts} stadiumState={stadiumState}>

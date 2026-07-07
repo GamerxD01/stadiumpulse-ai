@@ -43,10 +43,9 @@ def mock_gemini_route():
 
 def test_routes_happy_path(mock_gemini_route):
     """Verify that POST /api/chat successfully coordinates tool calling and returns calculations."""
-    response = client.post("/api/chat", json={
-        "message": "How do I get to Section 102 from Gate A?",
-        "accessibility_mode": False
-    })
+    response = client.post(
+        "/api/chat", json={"message": "How do I get to Section 102 from Gate A?", "accessibility_mode": False}
+    )
     assert response.status_code == 200
     data = response.json()
     assert "response" in data
@@ -73,10 +72,9 @@ def test_routes_accessibility_mode():
     mock_gen = MagicMock(side_effect=[mock_resp1, mock_resp2])
     orchestrator.client.models.generate_content = mock_gen
 
-    response = client.post("/api/chat", json={
-        "message": "I need a step-free route to Section 102",
-        "accessibility_mode": True
-    })
+    response = client.post(
+        "/api/chat", json={"message": "I need a step-free route to Section 102", "accessibility_mode": True}
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -89,39 +87,28 @@ def test_routes_accessibility_mode():
 def test_routes_error_missing_message():
     """Verify that blank queries are gracefully caught or handled by endpoints."""
     # Blank whitespace string can trigger 422 or 200 depending on strip, let's verify
-    response = client.post("/api/chat", json={
-        "message": "   ",
-        "accessibility_mode": False
-    })
+    response = client.post("/api/chat", json={"message": "   ", "accessibility_mode": False})
     assert response.status_code in [200, 422, 400]
 
 
 def test_routes_empty_input():
     """Verify that empty queries are rejected with validation error 422."""
     # Empty message should be rejected by Pydantic min_length=1 validation (422)
-    response = client.post("/api/chat", json={
-        "message": "",
-        "accessibility_mode": False
-    })
+    response = client.post("/api/chat", json={"message": "", "accessibility_mode": False})
     assert response.status_code == 422
 
 
 def test_routes_oversized_input():
     """Verify that oversized queries exceeding 500 characters are rejected with 422."""
     # 501 character string should be rejected by max_length=500 validation (422)
-    response = client.post("/api/chat", json={
-        "message": "x" * 501,
-        "accessibility_mode": False
-    })
+    response = client.post("/api/chat", json={"message": "x" * 501, "accessibility_mode": False})
     assert response.status_code == 422
 
 
 def test_invalid_trigger_spike():
     """Verify that posting an unsupported spike type gets rejected with 422."""
     # Reject invalid spike types not matching the regex pattern (422)
-    response = client.post("/api/trigger-spike", json={
-        "spike_type": "unauthorized"
-    })
+    response = client.post("/api/trigger-spike", json={"spike_type": "unauthorized"})
     assert response.status_code == 422
 
 

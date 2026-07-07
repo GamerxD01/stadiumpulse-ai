@@ -41,9 +41,7 @@ def mock_gemini_shift_briefing():
 def mock_gemini_shift_exception():
     """Mock Gemini to raise on shift briefing call."""
     original_generate = orchestrator.client.models.generate_content
-    orchestrator.client.models.generate_content = MagicMock(
-        side_effect=Exception("Gemini unavailable")
-    )
+    orchestrator.client.models.generate_content = MagicMock(side_effect=Exception("Gemini unavailable"))
     yield
     orchestrator.client.models.generate_content = original_generate
 
@@ -91,9 +89,7 @@ def mock_gemini_sustainability_briefing():
 def mock_gemini_sustainability_exception():
     """Mock Gemini to raise on sustainability briefing call."""
     original_generate = orchestrator.client.models.generate_content
-    orchestrator.client.models.generate_content = MagicMock(
-        side_effect=Exception("Quota exceeded")
-    )
+    orchestrator.client.models.generate_content = MagicMock(side_effect=Exception("Quota exceeded"))
     yield
     orchestrator.client.models.generate_content = original_generate
 
@@ -130,8 +126,7 @@ def mock_gemini_explain_alert():
 
     mock_resp = MagicMock()
     mock_resp.text = (
-        "Hey volunteers! Crowd bottleneck at Gate B — please redirect fans "
-        "to Gates A, C, or D immediately."
+        "Hey volunteers! Crowd bottleneck at Gate B — please redirect fans to Gates A, C, or D immediately."
     )
 
     orchestrator.client.models.generate_content = MagicMock(return_value=mock_resp)
@@ -143,9 +138,7 @@ def mock_gemini_explain_alert():
 def mock_gemini_explain_exception():
     """Mock Gemini to raise on explain-alert call."""
     original_generate = orchestrator.client.models.generate_content
-    orchestrator.client.models.generate_content = MagicMock(
-        side_effect=Exception("Connection timeout")
-    )
+    orchestrator.client.models.generate_content = MagicMock(side_effect=Exception("Connection timeout"))
     yield
     orchestrator.client.models.generate_content = original_generate
 

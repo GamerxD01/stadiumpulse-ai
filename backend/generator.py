@@ -107,9 +107,7 @@ class StadiumSimulator:
         self.transit_modes: List[str] = ["Train", "Shuttle Bus", "Rideshare"]
 
         self.crowd_density: Dict[str, int] = dict.fromkeys(self.zones, DEFAULT_ZONE_DENSITY)
-        self.transit_status: Dict[str, Dict[str, Any]] = {
-            k: dict(v) for k, v in BASELINE_TRANSIT_STATUS.items()
-        }
+        self.transit_status: Dict[str, Dict[str, Any]] = {k: dict(v) for k, v in BASELINE_TRANSIT_STATUS.items()}
         self.incidents: List[Incident] = []
         self.last_update: float = time.time()
         self.spike_active: bool = False
@@ -154,50 +152,60 @@ class StadiumSimulator:
 
         if spike_type == "crowd":
             self.crowd_density.update(CROWD_SPIKE_DENSITIES)
-            self.incidents.append(self._make_incident(
-                spike_type="crowd",
-                location="Gate B",
-                severity="Critical",
-                description="Sudden bottle-neck at Gate B turnstiles. Flow density exceeds 4.5 persons/sq-meter.",
-            ))
+            self.incidents.append(
+                self._make_incident(
+                    spike_type="crowd",
+                    location="Gate B",
+                    severity="Critical",
+                    description="Sudden bottle-neck at Gate B turnstiles. Flow density exceeds 4.5 persons/sq-meter.",
+                )
+            )
 
         elif spike_type == "medical":
             self.crowd_density.update(MEDICAL_SPIKE_DENSITIES)
-            self.incidents.append(self._make_incident(
-                spike_type="medical",
-                location="Gate C Escalator",
-                severity="High",
-                description="Elderly fan collapsed near Gate C upper level escalator. Responders dispatched.",
-            ))
+            self.incidents.append(
+                self._make_incident(
+                    spike_type="medical",
+                    location="Gate C Escalator",
+                    severity="High",
+                    description="Elderly fan collapsed near Gate C upper level escalator. Responders dispatched.",
+                )
+            )
 
         elif spike_type == "transit":
             self.crowd_density.update(TRANSIT_SPIKE_DENSITIES)
             self.transit_status["Train"] = dict(TRANSIT_SPIKE_TRAIN)
             self.transit_status["Shuttle Bus"] = dict(TRANSIT_SPIKE_SHUTTLE)
-            self.incidents.append(self._make_incident(
-                spike_type="transit",
-                location="Transit Hub",
-                severity="High",
-                description="NJ Transit Rail service suspended temporarily due to switch issue.",
-            ))
+            self.incidents.append(
+                self._make_incident(
+                    spike_type="transit",
+                    location="Transit Hub",
+                    severity="High",
+                    description="NJ Transit Rail service suspended temporarily due to switch issue.",
+                )
+            )
 
         elif spike_type == "security":
             # Direct security incident at loading zone
-            self.incidents.append(self._make_incident(
-                spike_type="security",
-                location="Gate D Loading Dock",
-                severity="High",
-                description="Unidentified individual bypassed perimeter Gate D fence line. Security responding.",
-            ))
+            self.incidents.append(
+                self._make_incident(
+                    spike_type="security",
+                    location="Gate D Loading Dock",
+                    severity="High",
+                    description="Unidentified individual bypassed perimeter Gate D fence line. Security responding.",
+                )
+            )
 
         elif spike_type == "safety":
             # Safety incident near vendor court
-            self.incidents.append(self._make_incident(
-                spike_type="safety",
-                location="Section 218 Food Court",
-                severity="Medium",
-                description="Minor grease flare-up in vendor ventilation hood. Fire crew on site. Under control.",
-            ))
+            self.incidents.append(
+                self._make_incident(
+                    spike_type="safety",
+                    location="Section 218 Food Court",
+                    severity="Medium",
+                    description="Minor grease flare-up in vendor ventilation hood. Fire crew on site. Under control.",
+                )
+            )
 
     def _clear_all(self) -> None:
         """Resets all spike state, incidents, and crowd metrics to baseline values."""

@@ -45,10 +45,9 @@ def mock_gemini_density():
 
 def test_crowd_density_happy_path(mock_gemini_density):
     """Verify that posting a request for density correctly coordinates tool calling."""
-    response = client.post("/api/chat", json={
-        "message": "What is the crowd density at Gate B?",
-        "accessibility_mode": False
-    })
+    response = client.post(
+        "/api/chat", json={"message": "What is the crowd density at Gate B?", "accessibility_mode": False}
+    )
     assert response.status_code == 200
     data = response.json()
     assert "response" in data
@@ -76,10 +75,7 @@ def test_crowd_density_invalid_zone():
     mock_gen = MagicMock(side_effect=[mock_resp1, mock_resp2])
     orchestrator.client.models.generate_content = mock_gen
 
-    response = client.post("/api/chat", json={
-        "message": "Check density at Unknown Zone",
-        "accessibility_mode": False
-    })
+    response = client.post("/api/chat", json={"message": "Check density at Unknown Zone", "accessibility_mode": False})
     assert response.status_code == 200
     data = response.json()
     assert any(t["name"] == "get_crowd_density" for t in data["tools_called"])
@@ -90,6 +86,7 @@ def test_crowd_density_invalid_zone():
 # ---------------------------------------------------------------------------
 # Direct unit tests for tool functions — covers threshold branches in orchestrator
 # ---------------------------------------------------------------------------
+
 
 def test_get_crowd_density_critical_status():
     """Density >= 90 maps to 'Critical (Overcrowding alert)' status."""

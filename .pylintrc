@@ -18,7 +18,7 @@
 #   state attributes (zones, modes, densities, timestamps, spike state).
 #   Splitting them across multiple objects would obscure the simulation
 #   domain model — this is an appropriate use of instance attributes.
-disable=R0903,W0621,W0613,R0902
+disable=R0903,W0621,W0613,R0902,duplicate-code
 
 [FORMAT]
 # Match the line length configured in .ruff.toml for consistency.

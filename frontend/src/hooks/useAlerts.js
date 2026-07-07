@@ -156,9 +156,7 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
       setTimeout(() => {
         const isSpanish = language === 'Spanish';
         const dict = isSpanish ? OFFLINE_EXPLANATIONS_ES : OFFLINE_EXPLANATIONS;
-        const matchKey = Object.keys(dict).find(
-          (key) => key !== 'default' && alert.incident_id.includes(key)
-        );
+        const matchKey = Object.keys(dict).find((key) => key !== 'default' && alert.incident_id.includes(key));
         setAlertExplanation(dict[matchKey] || dict.default);
         setLoadingExplanation(false);
       }, OFFLINE_EXPLANATION_DELAY_MS);
