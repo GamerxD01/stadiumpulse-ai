@@ -54,19 +54,42 @@ export default function DensityChart({ stadiumState }) {
       </div>
       <div className="h-[220px] w-full">
         {stadiumState ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} domain={[0, 100]} />
-              <Tooltip
-                contentStyle={TOOLTIP_CONTENT_STYLE}
-                labelStyle={TOOLTIP_LABEL_STYLE}
-                itemStyle={TOOLTIP_ITEM_STYLE}
-              />
-              <Bar dataKey="density" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            {/* Screen reader table representing the chart data */}
+            <div className="sr-only">
+              <h4>Live Sector Crowd Densities Table</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Zone</th>
+                    <th>Density Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chartData.map((d) => (
+                    <tr key={d.name}>
+                      <td>{d.name}</td>
+                      <td>{d.density}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} domain={[0, 100]} />
+                <Tooltip
+                  contentStyle={TOOLTIP_CONTENT_STYLE}
+                  labelStyle={TOOLTIP_LABEL_STYLE}
+                  itemStyle={TOOLTIP_ITEM_STYLE}
+                />
+                <Bar dataKey="density" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </>
         ) : (
           <p className="text-xs text-slate-500">Awaiting data...</p>
         )}

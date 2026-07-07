@@ -32,6 +32,17 @@ const OFFLINE_EXPLANATIONS = {
     "An incident has been detected. Please follow your supervisor's instructions and report to the nearest team lead for deployment orders."
 };
 
+/** Pre-scripted volunteer explanations in Spanish for offline fallback. */
+const OFFLINE_EXPLANATIONS_ES = {
+  crowd:
+    '¡Hola voluntarios! Tenemos un cuello de botella con mucha gente en la Puerta B. Por favor, vayan allí inmediatamente. Redirección: desvíen a los aficionados que entran lejos de la Puerta B hacia las Puertas A, C o D, donde las colas son más cortas. Estén atentos a niños o aficionados mayores que necesiten ayuda.',
+  med: 'Equipo, ha ocurrido una emergencia médica en la escalera mecánica superior de la Puerta C. Los servicios médicos ya están en el lugar. Su trabajo: bloquear el acceso a la escalera mecánica y guiar a las personas hacia las escaleras estándar o ascensores.',
+  trans:
+    'Aviso importante: Las líneas de tren están completamente suspendidas. Se están formando acumulaciones de pasajeros. Megáfonos activos. Redirijan a los pasajeros a las colas para los autobuses de enlace. Despejen las zonas de carga para que los autobuses puedan estacionar.',
+  default:
+    'Se ha detectado un incidente. Por favor, siga las instrucciones de su supervisor y diríjase al líder de equipo más cercano para recibir órdenes de despliegue.'
+};
+
 /**
  * Returns a set of pre-computed mock alerts for the given spike type.
  * Used as an offline fallback when the backend is unreachable.
@@ -143,10 +154,12 @@ export default function useAlerts(isServerOffline, activeSpikeType) {
 
     if (isServerOffline) {
       setTimeout(() => {
-        const matchKey = Object.keys(OFFLINE_EXPLANATIONS).find(
+        const isSpanish = language === 'Spanish';
+        const dict = isSpanish ? OFFLINE_EXPLANATIONS_ES : OFFLINE_EXPLANATIONS;
+        const matchKey = Object.keys(dict).find(
           (key) => key !== 'default' && alert.incident_id.includes(key)
         );
-        setAlertExplanation(OFFLINE_EXPLANATIONS[matchKey] || OFFLINE_EXPLANATIONS.default);
+        setAlertExplanation(dict[matchKey] || dict.default);
         setLoadingExplanation(false);
       }, OFFLINE_EXPLANATION_DELAY_MS);
       return;

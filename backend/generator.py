@@ -181,6 +181,24 @@ class StadiumSimulator:
                 description="NJ Transit Rail service suspended temporarily due to switch issue.",
             ))
 
+        elif spike_type == "security":
+            # Direct security incident at loading zone
+            self.incidents.append(self._make_incident(
+                spike_type="security",
+                location="Gate D Loading Dock",
+                severity="High",
+                description="Unidentified individual bypassed perimeter Gate D fence line. Security responding.",
+            ))
+
+        elif spike_type == "safety":
+            # Safety incident near vendor court
+            self.incidents.append(self._make_incident(
+                spike_type="safety",
+                location="Section 218 Food Court",
+                severity="Medium",
+                description="Minor grease flare-up in vendor ventilation hood. Fire crew on site. Under control.",
+            ))
+
     def _clear_all(self) -> None:
         """Resets all spike state, incidents, and crowd metrics to baseline values."""
         self.spike_active = False

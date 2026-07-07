@@ -125,6 +125,14 @@ export default function FanCompanionChat({
             <option value="Hindi">हिन्दी (Hindi)</option>
             <option value="French">Français (French)</option>
             <option value="Japanese">日本語 (Japanese)</option>
+            <option value="German">Deutsch (German)</option>
+            <option value="Korean">한국어 (Korean)</option>
+            <option value="Mandarin Chinese">普通话 (Mandarin)</option>
+            <option value="Italian">Italiano (Italian)</option>
+            <option value="Dutch">Nederlands (Dutch)</option>
+            <option value="Russian">Русский (Russian)</option>
+            <option value="Turkish">Türkçe (Turkish)</option>
+            <option value="Swahili">Kiswahili (Swahili)</option>
           </select>
         </div>
 

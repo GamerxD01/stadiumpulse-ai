@@ -1,3 +1,8 @@
+"""Unit tests for crowd density evaluation, threshold routing, and accessibility services.
+
+Covers density state classifications and Nominatim OSM fallback lookups.
+"""
+
 import json as _json
 from unittest.mock import MagicMock
 
@@ -10,8 +15,10 @@ from backend.orchestrator import get_accessibility_info, get_crowd_density, orch
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def mock_gemini_density():
+    """Fixture to mock Gemini's density retrieval model call flow."""
     original_generate = orchestrator.client.models.generate_content
 
     # Mock turn 1: Gemini returns get_crowd_density tool call
@@ -35,7 +42,9 @@ def mock_gemini_density():
 
     orchestrator.client.models.generate_content = original_generate
 
+
 def test_crowd_density_happy_path(mock_gemini_density):
+    """Verify that posting a request for density correctly coordinates tool calling."""
     response = client.post("/api/chat", json={
         "message": "What is the crowd density at Gate B?",
         "accessibility_mode": False
@@ -45,7 +54,9 @@ def test_crowd_density_happy_path(mock_gemini_density):
     assert "response" in data
     assert any(t["name"] == "get_crowd_density" for t in data["tools_called"])
 
+
 def test_crowd_density_invalid_zone():
+    """Verify that requesting density for an unknown zone triggers correct tool error logic."""
     original_generate = orchestrator.client.models.generate_content
 
     # Mock turn 1: Gemini returns get_crowd_density tool call for non-existing zone

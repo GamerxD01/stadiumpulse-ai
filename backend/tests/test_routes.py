@@ -1,4 +1,7 @@
-"""Tests for FastAPI route validation, middleware, and simulator spike endpoints."""
+"""Unit tests for FastAPI routes, CORS configuration, security headers, and rate limiter.
+
+Covers chat post endpoints, simulator spike triggers, and route level edge cases.
+"""
 
 from unittest.mock import MagicMock
 
@@ -10,8 +13,10 @@ from backend.orchestrator import orchestrator
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def mock_gemini_route():
+    """Fixture to mock Gemini's sequential tool-call and response cycle."""
     original_generate = orchestrator.client.models.generate_content
 
     # Mock turn 1: Gemini returns get_route tool call
@@ -35,7 +40,9 @@ def mock_gemini_route():
 
     orchestrator.client.models.generate_content = original_generate
 
+
 def test_routes_happy_path(mock_gemini_route):
+    """Verify that POST /api/chat successfully coordinates tool calling and returns calculations."""
     response = client.post("/api/chat", json={
         "message": "How do I get to Section 102 from Gate A?",
         "accessibility_mode": False
@@ -46,7 +53,9 @@ def test_routes_happy_path(mock_gemini_route):
     assert "tools_called" in data
     assert any(t["name"] == "get_route" for t in data["tools_called"])
 
+
 def test_routes_accessibility_mode():
+    """Verify that requesting accessibility mode forces step-free tool arguments."""
     original_generate = orchestrator.client.models.generate_content
 
     mock_call = MagicMock()
@@ -76,7 +85,9 @@ def test_routes_accessibility_mode():
 
     orchestrator.client.models.generate_content = original_generate
 
+
 def test_routes_error_missing_message():
+    """Verify that blank queries are gracefully caught or handled by endpoints."""
     # Blank whitespace string can trigger 422 or 200 depending on strip, let's verify
     response = client.post("/api/chat", json={
         "message": "   ",
@@ -84,7 +95,9 @@ def test_routes_error_missing_message():
     })
     assert response.status_code in [200, 422, 400]
 
+
 def test_routes_empty_input():
+    """Verify that empty queries are rejected with validation error 422."""
     # Empty message should be rejected by Pydantic min_length=1 validation (422)
     response = client.post("/api/chat", json={
         "message": "",
@@ -92,7 +105,9 @@ def test_routes_empty_input():
     })
     assert response.status_code == 422
 
+
 def test_routes_oversized_input():
+    """Verify that oversized queries exceeding 500 characters are rejected with 422."""
     # 501 character string should be rejected by max_length=500 validation (422)
     response = client.post("/api/chat", json={
         "message": "x" * 501,
@@ -100,14 +115,18 @@ def test_routes_oversized_input():
     })
     assert response.status_code == 422
 
+
 def test_invalid_trigger_spike():
+    """Verify that posting an unsupported spike type gets rejected with 422."""
     # Reject invalid spike types not matching the regex pattern (422)
     response = client.post("/api/trigger-spike", json={
-        "spike_type": "security"
+        "spike_type": "unauthorized"
     })
     assert response.status_code == 422
 
+
 def test_simulator_clear_resolves_to_baseline():
+    """Verify that clear triggers reset simulator states and metrics back to normal baseline."""
     # Trigger crowd density spike first
     client.post("/api/trigger-spike", json={"spike_type": "crowd"})
     status_response1 = client.get("/api/status")
@@ -165,6 +184,8 @@ def test_security_headers_present():
     assert response.status_code == 200
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-XSS-Protection") == "1; mode=block"
+    assert "Strict-Transport-Security" in response.headers
     assert "Referrer-Policy" in response.headers
 
 
@@ -177,5 +198,3 @@ def test_rate_limit_middleware_returns_429_after_limit():
         r = test_client.get("/api/status")
         responses.append(r.status_code)
     assert 429 in responses, "Expected at least one 429 after 40 requests"
-
-

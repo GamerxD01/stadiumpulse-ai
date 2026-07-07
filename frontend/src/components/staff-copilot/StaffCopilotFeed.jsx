@@ -87,6 +87,32 @@ export default function StaffCopilotFeed({
               <Bus className="w-5 h-5 text-indigo-400" aria-hidden="true" />
             </button>
 
+            <button
+              id="spike-btn-security"
+              onClick={() => triggerSpike('security')}
+              className="flex items-center justify-between p-3.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition text-left cursor-pointer"
+              aria-label="Simulate security alert"
+            >
+              <div>
+                <span className="text-xs font-bold block">4. Simulate Security Alert</span>
+                <span className="text-[10px] text-purple-400/80">Suspicious perimeter breach at Gate D dock</span>
+              </div>
+              <ShieldAlert className="w-5 h-5 text-purple-400" aria-hidden="true" />
+            </button>
+
+            <button
+              id="spike-btn-safety"
+              onClick={() => triggerSpike('safety')}
+              className="flex items-center justify-between p-3.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 border border-pink-500/30 transition text-left cursor-pointer"
+              aria-label="Simulate safety incident"
+            >
+              <div>
+                <span className="text-xs font-bold block">5. Simulate Safety Incident</span>
+                <span className="text-[10px] text-pink-400/80">Vendor ventilation grease fire at Section 218</span>
+              </div>
+              <AlertTriangle className="w-5 h-5 text-pink-400" aria-hidden="true" />
+            </button>
+
             <div className="border-t border-slate-800 my-1"></div>
 
             <button

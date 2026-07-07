@@ -6,7 +6,6 @@ fallback behavior, and edge cases (no results, API errors).
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 from fastapi.testclient import TestClient
 
 from backend.main import app

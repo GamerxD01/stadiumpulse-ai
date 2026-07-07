@@ -94,6 +94,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "connect-src 'self' "
@@ -164,7 +166,7 @@ OPEN_METEO_BASE_URL = os.getenv("OPEN_METEO_BASE_URL", "https://api.open-meteo.c
 class SpikeRequest(BaseModel):
     """Pydantic request validator for incident control panel triggers."""
 
-    spike_type: str = Field(..., pattern="^(crowd|medical|transit|clear)$")
+    spike_type: str = Field(..., pattern="^(crowd|medical|transit|security|safety|clear)$")
 
 
 @app.get("/")
@@ -182,7 +184,7 @@ def get_status() -> Any:
 @app.post("/api/trigger-spike")
 def trigger_spike(req: SpikeRequest) -> Dict[str, Any]:
     """Simulates an overcrowding or medical incident scenario."""
-    valid_types = ["crowd", "medical", "transit", "clear"]
+    valid_types = ["crowd", "medical", "transit", "security", "safety", "clear"]
     if req.spike_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid spike_type. Must be one of {valid_types}")
     simulator.trigger_spike(req.spike_type)

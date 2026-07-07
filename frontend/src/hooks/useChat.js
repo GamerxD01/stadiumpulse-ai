@@ -54,30 +54,41 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
     if (isServerOffline) {
       setTimeout(() => {
         const lower = text.toLowerCase();
-        let reply = DEFAULT_CHAT_REPLY;
+        const isSpanish = language === 'Spanish' || lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
+        let reply = isSpanish
+          ? 'Estoy procesando su consulta. ¿Podría especificar de qué sección, puerta u opción de transporte está preguntando?'
+          : DEFAULT_CHAT_REPLY;
         let tools = [];
 
-        if (lower.includes('gate b') || lower.includes('crowded')) {
+        if (lower.includes('gate b') || lower.includes('crowded') || lower.includes('puerta b')) {
           const density = stadiumState ? stadiumState.crowd_density['Gate B'] : 38;
-          reply = `The current crowd density at Gate B is ${density}%, which is currently normal. Let me know if you need routing to less congested entrances!`;
+          reply = isSpanish
+            ? `La densidad de multitud actual en la Puerta B es del ${density}%, lo cual es normal. ¡Dígame si necesita una ruta hacia entradas menos congestionadas!`
+            : `The current crowd density at Gate B is ${density}%, which is currently normal. Let me know if you need routing to less congested entrances!`;
           tools = [{ name: 'get_crowd_density', args: { zone: 'Gate B' } }];
-        } else if (lower.includes('shuttle') || lower.includes('bus')) {
+        } else if (lower.includes('shuttle') || lower.includes('bus') || lower.includes('autobús') || lower.includes('autobus')) {
           const waitTime = stadiumState ? stadiumState.transit_status['Shuttle Bus'].wait_time_mins : 5;
           const congestion = stadiumState ? stadiumState.transit_status['Shuttle Bus'].congestion : 'Low';
-          reply = `The Shuttle Bus currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
+          const congestionEs = congestion === 'Low' ? 'Baja' : congestion === 'Medium' ? 'Media' : 'Alta';
+          reply = isSpanish
+            ? `El autobús de enlace actualmente tiene un tiempo de espera de aproximadamente ${waitTime} minutos con congestión ${congestionEs}.`
+            : `The Shuttle Bus currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
           tools = [{ name: 'get_transit_status', args: { route_or_station: 'Shuttle Bus' } }];
-        } else if (lower.includes('train')) {
+        } else if (lower.includes('train') || lower.includes('tren')) {
           const waitTime = stadiumState ? stadiumState.transit_status['Train'].wait_time_mins : 10;
           const congestion = stadiumState ? stadiumState.transit_status['Train'].congestion : 'Medium';
-          reply = `The Rail Service currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
+          const congestionEs = congestion === 'Low' ? 'Baja' : congestion === 'Medium' ? 'Media' : 'Alta';
+          reply = isSpanish
+            ? `El servicio ferroviario actualmente tiene un tiempo de espera de aproximadamente ${waitTime} minutos con congestión ${congestionEs}.`
+            : `The Rail Service currently has a wait time of approximately ${waitTime} minutes with ${congestion} congestion.`;
           tools = [{ name: 'get_transit_status', args: { route_or_station: 'Train' } }];
         } else if (
           lower.includes('route') ||
           lower.includes('get to') ||
           lower.includes('cómo llegar') ||
-          lower.includes('como llegar')
+          lower.includes('como llegar') ||
+          lower.includes('ruta')
         ) {
-          const isSpanish = lower.includes('cómo') || lower.includes('como') || lower.includes('llegar');
           const isAccessible =
             accessibilityMode ||
             lower.includes('wheelchair') ||
@@ -92,7 +103,7 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
             ];
           } else {
             reply = isSpanish
-              ? 'Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha.'
+              ? 'Ruta rápida estándar: Suba la escalera mecánica central hasta el nivel 2 y gire a la derecha hacia la sección 102.'
               : 'Standard express route calculated: Walk up the central escalator to Level 2 Concourse and turn right towards section 102.';
             tools = [
               { name: 'get_route', args: { start: 'Gate A', destination: 'Section 102', accessibility_mode: false } }

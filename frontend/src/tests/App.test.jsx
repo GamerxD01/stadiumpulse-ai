@@ -113,6 +113,18 @@ describe('StadiumPulse AI Frontend Tests', () => {
     expect(sustainBtn).toBeTruthy();
   });
 
+  test('staff copilot panel renders all five spike trigger buttons', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText(/Staff Copilot/i));
+
+    expect(screen.getByRole('button', { name: /Simulate crowd density spike/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Simulate medical incident/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Simulate transit delay/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Simulate security alert/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Simulate safety incident/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Reset simulator/i })).toBeTruthy();
+  });
+
   test('navigation tabs have correct ARIA role attributes', () => {
     render(<App />);
     const tabs = screen.getAllByRole('tab');
