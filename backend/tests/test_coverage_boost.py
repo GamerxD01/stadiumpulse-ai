@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from backend.main import app
 from backend.generator import simulator
+from backend.main import app
 from backend.orchestrator import (
     geocode_location,
     get_transit_status,

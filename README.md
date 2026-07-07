@@ -11,7 +11,7 @@
 
 | Brief Operational Area | Feature in StadiumPulse AI | Implementation Details | Codebase File & Function |
 | :--- | :--- | :--- | :--- |
-| **🧭 Navigation** | **AI Wayfinder**: Turn-by-turn text routing instructions using simulated map paths. | Gemini Tool Calling | [orchestrator.py:get_route](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **🧭 Navigation** | **AI Wayfinder**: Turn-by-turn text routing instructions using simulated map paths, now congestion-aware — routes through zones above 85% density return a proactive advisory to reroute. | Gemini Tool Calling | [orchestrator.py:get_route](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **👥 Crowd Management** | **Crowd Density Copilot**: Narrates raw turnstile counts into plain-English alerts. | Gemini Tool Calling | [orchestrator.py:get_crowd_density](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **♿ Accessibility** | **ADA Concierge**: Step-free routes + zone-specific elevator, restroom, sensory room, and hearing loop info via dedicated `get_accessibility_info` tool. | Gemini Tool Calling + Frontend Toggle | [orchestrator.py:get_accessibility_info](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
 | **🚌 Transportation** | **Transit GPT**: Rideshare, rail, and bus wait time estimation with live gridlock metrics. | Gemini Tool Calling | [orchestrator.py:get_transit_status](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
@@ -197,14 +197,14 @@ StadiumPulse AI was built specifically to address the FIFA World Cup 2026 proble
 
 | PS Pillar | StadiumPulse AI Implementation | Implemented In | Status |
 |---|---|---|---|
-| **Navigation** | `get_route()` tool — step-by-step stadium wayfinding with Gemini reasoning | [`orchestrator.py:get_route`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L53) | ✅ Solid |
-| **Crowd Management** | `get_crowd_density()` tool + Staff Copilot alert feed with AI safety plans | [`orchestrator.py:get_crowd_density`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L24) | ✅ Solid |
-| **Accessibility** | `get_accessibility_info()` tool — zone-specific ADA elevators, restrooms, sensory rooms, hearing loops | [`orchestrator.py:get_accessibility_info`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L125) | ✅ Solid |
-| **Transportation** | Live rail/shuttle/rideshare wait status + GenAI route recommendation suggestions | [`main.py:recommend_transportation`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L338) | ✅ Solid |
-| **Sustainability** | `/api/sustainability/optimize` endpoint (recommends energy/waste management adjustments) + GenAI narrative summary | [`main.py:optimize_sustainability`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L284) | ✅ Solid |
-| **Multilingual Assistance** | Gemini auto-detects 15 languages and responds natively with no translation API | [`orchestrator.py:_build_conversation_contents`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L404) | ✅ Solid |
-| **Operational Intelligence** | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | [`orchestrator.py:generate_shift_briefing`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L660) | ✅ Solid |
-| **Real-Time Decision Support** | Live simulator + Gemini `evaluate_alerts()` with confidence scores and structured action plans | [`orchestrator.py:evaluate_alerts`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L542) | ✅ Solid |
+| **Navigation** | `get_route()` tool — congestion-aware step-by-step wayfinding: checks live simulator density for the route's start/destination zones and attaches a `congestion_advisory` recommending alternates when a zone exceeds 85% | [`orchestrator.py:get_route`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L112) | ✅ Solid |
+| **Crowd Management** | `get_crowd_density()` tool + Staff Copilot alert feed with AI safety plans | [`orchestrator.py:get_crowd_density`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L49) | ✅ Solid |
+| **Accessibility** | `get_accessibility_info()` tool — zone-specific ADA elevators, restrooms, sensory rooms, hearing loops | [`orchestrator.py:get_accessibility_info`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L231) | ✅ Solid |
+| **Transportation** | Live rail/shuttle/rideshare wait status + GenAI route recommendation suggestions | [`main.py:recommend_transportation`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L371) | ✅ Solid |
+| **Sustainability** | `/api/sustainability/optimize` endpoint (recommends energy/waste management adjustments) + GenAI narrative summary | [`main.py:optimize_sustainability`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L312) | ✅ Solid |
+| **Multilingual Assistance** | Gemini auto-detects 15 languages and responds natively with no translation API | [`orchestrator.py:_build_conversation_contents`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L498) | ✅ Solid |
+| **Operational Intelligence** | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | [`orchestrator.py:generate_shift_briefing`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L763) | ✅ Solid |
+| **Real-Time Decision Support** | Live simulator + Gemini `evaluate_alerts()` with confidence scores and structured action plans | [`orchestrator.py:evaluate_alerts`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L651) | ✅ Solid |
 
 > See [MULTILINGUAL.md](./MULTILINGUAL.md) for full multilingual capability documentation with example prompts in 6 languages.
 

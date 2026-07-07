@@ -18,6 +18,33 @@ from backend.generator import simulator
 
 load_dotenv()
 
+#: Density (%) at or above which a zone is treated as congested for proactive
+#: routing advisories. Kept in sync with the 85% threshold used in the system
+#: instruction and the crowd-safety warning injected in _build_conversation_contents.
+ROUTE_CONGESTION_THRESHOLD: int = 85
+
+#: Default density (%) assumed when a zone is absent from the simulator snapshot.
+DEFAULT_ZONE_DENSITY: int = 40
+
+
+def _match_zone(zone: str) -> str:
+    """Fuzzy-matches a free-text zone string to a known simulator zone.
+
+    Performs a case-insensitive bidirectional substring match against the
+    simulator's canonical zone list, returning the first match.
+
+    Args:
+        zone: Free-text zone name from a user query or tool argument.
+
+    Returns:
+        The canonical simulator zone name, or the original string if no zone matches.
+    """
+    zone_upper = zone.upper()
+    for z in simulator.zones:
+        if z.upper() in zone_upper or zone_upper in z.upper():
+            return z
+    return zone
+
 
 def get_crowd_density(zone: str) -> str:
     """Gets the current crowd density percentage and status for a zone.
@@ -28,17 +55,10 @@ def get_crowd_density(zone: str) -> str:
     Returns:
         JSON string representing current density percentage and classification status.
     """
-    zone_upper = zone.upper()
-    matched_zone = None
-    for z in simulator.zones:
-        if z.upper() in zone_upper or zone_upper in z.upper():
-            matched_zone = z
-            break
-    if not matched_zone:
-        matched_zone = zone
+    matched_zone = _match_zone(zone)
 
     state = simulator.get_state()
-    density = state.crowd_density.get(matched_zone, 40)
+    density = state.crowd_density.get(matched_zone, DEFAULT_ZONE_DENSITY)
 
     status = "Low"
     if density >= 90:
@@ -51,8 +71,50 @@ def get_crowd_density(zone: str) -> str:
     return json.dumps({"zone": matched_zone, "density_percentage": density, "status": status})
 
 
+def _route_congestion_advisory(start_zone: str, dest_zone: str) -> Dict[str, Any] | None:
+    """Builds a proactive congestion advisory when a route touches a busy zone.
+
+    Reads live simulator density for the route's start and destination zones and,
+    if either is at or above ROUTE_CONGESTION_THRESHOLD, returns an advisory naming
+    the congested zones and their densities so the model can warn the fan and
+    suggest alternates. Returns None when the whole route is clear.
+
+    Args:
+        start_zone: Canonical simulator zone name for the route origin.
+        dest_zone: Canonical simulator zone name for the route destination.
+
+    Returns:
+        A dict with 'level', 'congested_zones', and 'guidance' keys, or None if
+        no zone on the route is congested.
+    """
+    density_map = simulator.get_state().crowd_density
+    # A dict comprehension keyed by zone naturally de-duplicates when start == destination.
+    congested = {
+        zone: density_map[zone]
+        for zone in (start_zone, dest_zone)
+        if density_map.get(zone, DEFAULT_ZONE_DENSITY) >= ROUTE_CONGESTION_THRESHOLD
+    }
+    if not congested:
+        return None
+
+    zones_str = ", ".join(f"{zone} ({density}%)" for zone, density in congested.items())
+    return {
+        "level": "High",
+        "congested_zones": congested,
+        "guidance": (
+            f"Heads-up: {zones_str} on this route currently exceeds "
+            f"{ROUTE_CONGESTION_THRESHOLD}% density. Expect delays and consider an "
+            "alternate gate or concourse if flexible."
+        ),
+    }
+
+
 def get_route(start: str, destination: str, accessibility_mode: bool = False) -> str:
-    """Gets navigation directions between two coordinates within MetLife Stadium.
+    """Gets navigation directions between two locations within MetLife Stadium.
+
+    Directions are congestion-aware: live simulator density for the start and
+    destination zones is checked, and a 'congestion_advisory' is attached when
+    either zone is busy so the fan can be proactively warned and offered alternates.
 
     Args:
         start: Starting point (e.g. Gate A).
@@ -60,7 +122,8 @@ def get_route(start: str, destination: str, accessibility_mode: bool = False) ->
         accessibility_mode: True if fan requires step-free / wheelchair routes.
 
     Returns:
-        JSON string with route details and instructions list.
+        JSON string with route details, an ordered instructions list, and an
+        optional congestion advisory when a zone on the route is overcrowded.
     """
     mode_text = "Step-Free Accessible Route" if accessibility_mode else "Standard Express Route"
     start_clean = start.strip().title()
@@ -82,9 +145,18 @@ def get_route(start: str, destination: str, accessibility_mode: bool = False) ->
             f"The {dest_clean} is located directly ahead.",
         ]
 
-    return json.dumps(
-        {"route_type": mode_text, "start": start_clean, "destination": dest_clean, "instructions": instructions}
-    )
+    route: Dict[str, Any] = {
+        "route_type": mode_text,
+        "start": start_clean,
+        "destination": dest_clean,
+        "instructions": instructions,
+    }
+
+    advisory = _route_congestion_advisory(_match_zone(start), _match_zone(destination))
+    if advisory is not None:
+        route["congestion_advisory"] = advisory
+
+    return json.dumps(route)
 
 
 def get_transit_status(route_or_station: str) -> str:
@@ -304,6 +376,27 @@ FALLBACK_CONFIDENCE_SCORE: int = 75
 #: Default fallback message returned when the model produces no text output.
 NO_RESPONSE_FALLBACK: str = "I apologize, I could not formulate a response."
 
+#: Multilingual accessibility keywords. If any appears in a fan's message we
+#: force accessibility_mode on so step-free routing is applied automatically.
+#: Defined at module level (mirroring _ACCESSIBILITY_DATA / TOOLS_MAP) so the
+#: list is built once at import time rather than on every chat() invocation.
+_ADA_KEYWORDS: List[str] = [
+    "wheelchair", "step-free", "elevator", "ada", "low-sensory", "hearing loop",
+    "visual impairment", "stairs", "escalator", "ramp", "lift",
+    "silla de ruedas", "sin escaleras", "ascensor", "rampa", "elevador", "sensorial",
+    "cadeira de rodas", "sem escadas", "deficiência", "escadas",
+    "fauteuil roulant", "sans escalier", "ascenseur", "rampe",
+    "rollstuhl", "stufenlos", "fahrstuhl", "aufzug", "treppe",
+    "ruote", "scale", "rampa",
+    "коляск", "лифт", "пандус", "лестниц",
+    "車椅子", "エレベーター", "エスカレーター", "段差", "階段",
+    "휠체어", "엘리베이터", "에스컬레이터", "계단",
+    "轮椅", "电梯", "扶梯", "无障碍", "楼梯",
+    "tekerlekli sandalye", "asansör", "merdiven",
+    "kiti cha magurudumu", "lifti", "ngazi",
+    "العجلة", "كرسي متحرك", "المصعد", "السلالم", "درج",
+]
+
 SYSTEM_INSTRUCTION = """
 You are the StadiumPulse AI Orchestrator — the central GenAI operating system deployed across FIFA World Cup 2026 venues.
 
@@ -486,25 +579,9 @@ class GeminiOrchestrator:
         Returns:
             Dictionary with keys 'response' (str) and 'tools_called' (list).
         """
-        # Multilingual list of ADA accessibility keywords to auto-detect step-free navigation needs
-        ada_keywords = [
-            "wheelchair", "step-free", "elevator", "ada", "low-sensory", "hearing loop",
-            "visual impairment", "stairs", "escalator", "ramp", "lift",
-            "silla de ruedas", "sin escaleras", "ascensor", "rampa", "elevador", "sensorial",
-            "cadeira de rodas", "sem escadas", "deficiência", "escadas",
-            "fauteuil roulant", "sans escalier", "ascenseur", "rampe",
-            "rollstuhl", "stufenlos", "fahrstuhl", "aufzug", "treppe",
-            "ruote", "scale", "rampa",
-            "коляск", "лифт", "пандус", "лестниц",
-            "車椅子", "エレベーター", "エスカレーター", "段差", "階段",
-            "휠체어", "엘리베이터", "에스컬레이터", "계단",
-            "轮椅", "电梯", "扶梯", "无障碍", "楼梯",
-            "tekerlekli sandalye", "asansör", "merdiven",
-            "kiti cha magurudumu", "lifti", "ngazi",
-            "العجلة", "كرسي متحرك", "المصعد", "السلالم", "درج"
-        ]
+        # Auto-detect step-free navigation needs from multilingual ADA keywords.
         msg_lower = user_message.lower()
-        if any(kw in msg_lower for kw in ada_keywords):
+        if any(kw in msg_lower for kw in _ADA_KEYWORDS):
             accessibility_mode = True
 
         contents = self._build_conversation_contents(user_message, history, accessibility_mode, language)

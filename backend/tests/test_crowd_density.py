@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from backend.generator import simulator
 from backend.main import app
-from backend.orchestrator import get_accessibility_info, get_crowd_density, orchestrator
+from backend.orchestrator import get_accessibility_info, get_crowd_density, get_route, orchestrator
 
 client = TestClient(app)
 
@@ -139,3 +139,44 @@ def test_get_accessibility_info_unknown_zone():
     result = _json.loads(get_accessibility_info("Unknown Sector 99"))
     assert "ada_hotline" in result
     assert "note" in result
+
+
+# ---------------------------------------------------------------------------
+# Congestion-aware routing: get_route attaches an advisory only when a zone
+# on the route is currently overcrowded.
+# ---------------------------------------------------------------------------
+
+
+def test_get_route_clear_route_has_no_advisory():
+    """A route between low-density zones carries no congestion advisory."""
+    simulator.trigger_spike("clear")  # resets every zone to 45% (below the 85% threshold)
+    result = _json.loads(get_route("Gate A", "Seating Bowl"))
+    assert result["start"] == "Gate A"
+    assert result["destination"] == "Seating Bowl"
+    assert result["instructions"]
+    assert "congestion_advisory" not in result
+    simulator.trigger_spike("clear")
+
+
+def test_get_route_through_congested_zone_adds_advisory():
+    """A route whose start or destination exceeds the threshold gets an advisory."""
+    simulator.trigger_spike("clear")
+    simulator.crowd_density["Gate B"] = 96  # push a route endpoint into congestion
+    result = _json.loads(get_route("Gate B", "Seating Bowl"))
+    advisory = result.get("congestion_advisory")
+    assert advisory is not None
+    assert advisory["level"] == "High"
+    assert "Gate B" in advisory["congested_zones"]
+    assert advisory["congested_zones"]["Gate B"] == 96
+    assert "Gate B" in advisory["guidance"]
+    simulator.trigger_spike("clear")
+
+
+def test_get_route_advisory_deduplicates_same_start_and_destination():
+    """When start and destination match a single congested zone it is listed once."""
+    simulator.trigger_spike("clear")
+    simulator.crowd_density["Transit Hub"] = 92
+    result = _json.loads(get_route("Transit Hub", "Transit Hub"))
+    advisory = result["congestion_advisory"]
+    assert list(advisory["congested_zones"].keys()) == ["Transit Hub"]
+    simulator.trigger_spike("clear")
