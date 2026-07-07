@@ -512,6 +512,33 @@ class GeminiOrchestrator:
         except Exception as e:
             return {"response": f"Orchestrator error occurred: {str(e)}", "tools_called": tools_called, "error": True}
 
+    async def _safe_generate(
+        self,
+        prompt: str,
+        config: types.GenerateContentConfig,
+        fallback: str | Callable[[], str],
+    ) -> str:
+        """Calls Gemini with the given prompt/config, returning a fallback on any failure.
+
+        Args:
+            prompt: The prompt text to send.
+            config: The GenerateContentConfig for this call.
+            fallback: A static fallback string, or a zero-arg callable that
+                produces one (use a callable when the fallback needs to reference
+                the exception or per-call data).
+
+        Returns:
+            The model's response text, or the fallback if the call fails or
+            returns empty text.
+        """
+        try:
+            response = self.client.models.generate_content(model=self.model, contents=prompt, config=config)
+            return response.text or (fallback() if callable(fallback) else fallback)
+        except Exception as e:
+            if callable(fallback):
+                return fallback()
+            return f"{fallback} (Error: {str(e)})"
+
     async def evaluate_alerts(self) -> List[Dict[str, Any]]:
         """Evaluates active incidents, generating safety alerts using model schemas.
 
@@ -548,41 +575,45 @@ class GeminiOrchestrator:
             Generate a safety plan for staff and volunteers on the ground.
             """
 
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=StaffAlertModel,
-                        system_instruction=(
-                            "You are a senior safety director at MetLife Stadium. "
-                            "Return a structured safety response for volunteers."
-                        ),
-                    ),
-                )
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=StaffAlertModel,
+                system_instruction=(
+                    "You are a senior safety director at MetLife Stadium. "
+                    "Return a structured safety response for volunteers."
+                ),
+            )
 
-                resp_text = response.text or "{}"
-                alert_data = json.loads(resp_text)
-                alert_data["incident_id"] = incident.id
-                self.alerts_cache[incident.id] = alert_data
-                evaluated_alerts.append(alert_data)
-            except Exception as e:
-                # Fallback details under rate limit warnings
-                fallback = {
-                    "incident_id": incident.id,
-                    "title": f"INCIDENT DETECTED: {incident.location}",
-                    "severity": incident.severity,
-                    "crowd_density": f"{state.crowd_density.get(incident.location, 80)}%",
+            def alert_fallback(inc: Any = incident) -> str:
+                import sys
+
+                exc = sys.exc_info()[1]
+                err_msg = str(exc) if exc else "Empty response"
+                fallback_dict = {
+                    "incident_id": inc.id,
+                    "title": f"INCIDENT DETECTED: {inc.location}",
+                    "severity": inc.severity,
+                    "crowd_density": f"{state.crowd_density.get(inc.location, 80)}%",
                     "recommended_actions": [
                         "Investigate the area immediately.",
                         "Direct fans away from congestion zones.",
                         "Coordinate with local supervisors.",
                     ],
                     "confidence_score": FALLBACK_CONFIDENCE_SCORE,
-                    "rationale": f"Fallback alert created due to connection issue: {str(e)}",
+                    "rationale": f"Fallback alert created due to connection issue: {err_msg}",
                 }
-                evaluated_alerts.append(fallback)
+                return json.dumps(fallback_dict)
+
+            resp_str = await self._safe_generate(prompt, config, alert_fallback)
+            try:
+                alert_data = json.loads(resp_str)
+                # Ensure the simulation incident ID is present
+                alert_data["incident_id"] = incident.id
+            except Exception:  # pylint: disable=broad-except
+                alert_data = json.loads(alert_fallback())
+
+            self.alerts_cache[incident.id] = alert_data
+            evaluated_alerts.append(alert_data)
 
         return evaluated_alerts
 
@@ -604,23 +635,25 @@ class GeminiOrchestrator:
 
         Target Language: {language}
         """
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=(
-                        "You are a friendly volunteer supervisor. Translate and explain the alert "
-                        "into simple, jargon-free terms in the requested target language."
-                    )
-                ),
+        config = types.GenerateContentConfig(
+            system_instruction=(
+                "You are a friendly volunteer supervisor. Translate and explain the alert "
+                "into simple, jargon-free terms in the requested target language."
             )
-            return response.text or "Follow the listed recommended actions and stay safe."
-        except Exception as e:  # noqa: BLE001 — Gemini SDK raises heterogeneous runtime errors
-            return (
-                f"Simplify guidelines: 1. Head to {alert_data.get('title')}. "
-                f"2. Direct crowd flow. 3. Help fans. (Error: {str(e)})"
-            )
+        )
+
+        def explain_fallback() -> str:
+            import sys
+
+            exc = sys.exc_info()[1]
+            if exc:
+                return (
+                    f"Simplify guidelines: 1. Head to {alert_data.get('title')}. "
+                    f"2. Direct crowd flow. 3. Help fans. (Error: {str(exc)})"
+                )
+            return "Follow the listed recommended actions and stay safe."
+
+        return await self._safe_generate(prompt, config, explain_fallback)
 
     async def generate_shift_briefing(
         self, incidents: List[Dict[str, Any]], crowd_density: Dict[str, int], language: str = "English"
@@ -643,24 +676,26 @@ class GeminiOrchestrator:
 
         Target Language: {language}
         """
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=(
-                        "You are a stadium ops chief. Output exactly 3 high-impact, professional "
-                        "bullet points strictly in the requested target language."
-                    )
-                ),
+        config = types.GenerateContentConfig(
+            system_instruction=(
+                "You are a stadium ops chief. Output exactly 3 high-impact, professional "
+                "bullet points strictly in the requested target language."
             )
-            return response.text or "All clear. Normal operations active."
-        except Exception as e:
-            return (
-                "• Operations Stable: Normal stadium flow.\n"
-                "• No major incidents reported in last 4 hours.\n"
-                f"• Shift transition in progress. (Error generating: {str(e)})"
-            )
+        )
+
+        def briefing_fallback() -> str:
+            import sys
+
+            exc = sys.exc_info()[1]
+            if exc:
+                return (
+                    "• Operations Stable: Normal stadium flow.\n"
+                    "• No major incidents reported in last 4 hours.\n"
+                    f"• Shift transition in progress. (Error generating: {str(exc)})"
+                )
+            return "All clear. Normal operations active."
+
+        return await self._safe_generate(prompt, config, briefing_fallback)
 
     async def generate_sustainability_briefing(self, metrics: Dict[str, Any], language: str = "English") -> str:
         """Generates narrative green sustainability operations summary using Gemini.
@@ -676,24 +711,26 @@ class GeminiOrchestrator:
 
         Target Language: {language}
         """
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=(
-                        "You are a green-operations advisor. Summarize sustainability performance "
-                        "in 2 paragraphs strictly in the requested target language."
-                    )
-                ),
+        config = types.GenerateContentConfig(
+            system_instruction=(
+                "You are a green-operations advisor. Summarize sustainability performance "
+                "in 2 paragraphs strictly in the requested target language."
             )
-            return response.text or "Green metrics stable. MetLife Stadium operations within green limits."
-        except Exception as e:
-            return (
-                "MetLife Stadium operations successfully diverted 82.4% of waste, "
-                "utilizing 8,400 kWh of solar energy. Water conservation saved 14,200 gallons. "
-                f"General grade: A-. (Error generating: {str(e)})"
-            )
+        )
+
+        def sustainability_fallback() -> str:
+            import sys
+
+            exc = sys.exc_info()[1]
+            if exc:
+                return (
+                    "MetLife Stadium operations successfully diverted 82.4% of waste, "
+                    "utilizing 8,400 kWh of solar energy. Water conservation saved 14,200 gallons. "
+                    f"General grade: A-. (Error generating: {str(exc)})"
+                )
+            return "Green metrics stable. MetLife Stadium operations within green limits."
+
+        return await self._safe_generate(prompt, config, sustainability_fallback)
 
 
 # Global orchestrator instance

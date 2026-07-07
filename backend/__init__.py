@@ -1,0 +1,1 @@
+# StadiumPulse AI backend package

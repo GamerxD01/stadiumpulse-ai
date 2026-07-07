@@ -81,9 +81,15 @@ exclude_lines = [
 python_version = "3.13"
 strict = true
 ignore_missing_imports = true
+mypy_path = "."
 
 [[tool.mypy.overrides]]
 module = "backend.tests.*"
+strict = false
+disable_error_code = ["no-untyped-def", "no-untyped-call", "method-assign", "assignment"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
 strict = false
 disable_error_code = ["no-untyped-def", "no-untyped-call", "method-assign", "assignment"]
 
