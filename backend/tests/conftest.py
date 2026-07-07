@@ -5,7 +5,11 @@ in-memory request log before each test file module that imports it,
 preventing 429 cross-contamination between test suites.
 """
 
+import os
+
 import pytest
+
+os.environ.setdefault("GEMINI_API_KEY", "test-gemini-api-key")
 
 from backend.main import RateLimitMiddleware, app
 

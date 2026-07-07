@@ -109,8 +109,12 @@ describe('StadiumPulse AI Frontend Tests', () => {
     // Both generate buttons should be present in the organizer dashboard
     const shiftBtn = screen.getByRole('button', { name: /Generate Shift Briefing/i });
     const sustainBtn = screen.getByRole('button', { name: /Generate Narrative/i });
+    const transportBtn = screen.getByRole('button', { name: /Recommend Route/i });
+    const optimizeBtn = screen.getByRole('button', { name: /Optimize Ops/i });
     expect(shiftBtn).toBeTruthy();
     expect(sustainBtn).toBeTruthy();
+    expect(transportBtn).toBeTruthy();
+    expect(optimizeBtn).toBeTruthy();
   });
 
   test('staff copilot panel renders all five spike trigger buttons', () => {

@@ -38,8 +38,14 @@ export default function App() {
     loadingShift,
     sustainabilityReport,
     loadingSustainability,
+    sustainabilityOptimizations,
+    loadingOptimizations,
+    transportationRecommendation,
+    loadingTransportation,
     generateShiftBriefing,
-    generateSustainabilityBriefing
+    generateSustainabilityBriefing,
+    generateSustainabilityOptimizations,
+    generateTransportationRecommendation
   } = useStaffBriefing(isServerOffline, language);
 
   return (
@@ -89,6 +95,12 @@ export default function App() {
             sustainabilityReport={sustainabilityReport}
             loadingSustainability={loadingSustainability}
             onGenerateSustainabilityBriefing={generateSustainabilityBriefing}
+            sustainabilityOptimizations={sustainabilityOptimizations}
+            loadingOptimizations={loadingOptimizations}
+            onGenerateSustainabilityOptimizations={generateSustainabilityOptimizations}
+            transportationRecommendation={transportationRecommendation}
+            loadingTransportation={loadingTransportation}
+            onGenerateTransportationRecommendation={generateTransportationRecommendation}
           />
         )}
       </main>

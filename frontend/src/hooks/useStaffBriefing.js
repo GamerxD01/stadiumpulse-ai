@@ -27,6 +27,10 @@ export default function useStaffBriefing(isServerOffline, language = 'English') 
   const [loadingShift, setLoadingShift] = useState(false);
   const [sustainabilityReport, setSustainabilityReport] = useState('');
   const [loadingSustainability, setLoadingSustainability] = useState(false);
+  const [sustainabilityOptimizations, setSustainabilityOptimizations] = useState([]);
+  const [loadingOptimizations, setLoadingOptimizations] = useState(false);
+  const [transportationRecommendation, setTransportationRecommendation] = useState(null);
+  const [loadingTransportation, setLoadingTransportation] = useState(false);
 
   /**
    * Requests an AI-generated shift handover briefing from the backend.
@@ -88,12 +92,96 @@ export default function useStaffBriefing(isServerOffline, language = 'English') 
     }
   };
 
+  /**
+   * Requests GenAI sustainability optimization actions from the live simulator state.
+   *
+   * @returns {Promise<void>}
+   */
+  const generateSustainabilityOptimizations = async () => {
+    setLoadingOptimizations(true);
+    if (isServerOffline) {
+      setTimeout(() => {
+        setSustainabilityOptimizations([
+          {
+            area: 'Energy',
+            recommendation: 'Move Gate D escalators to eco-mode while density remains below 40%.',
+            impact: 'High'
+          },
+          {
+            area: 'Waste',
+            recommendation: 'Send recycling staff to Concourse East before the post-match food surge.',
+            impact: 'Medium'
+          },
+          {
+            area: 'Water',
+            recommendation: 'Reduce restroom water pressure in low-traffic seating sections by 10%.',
+            impact: 'Medium'
+          }
+        ]);
+        setLoadingOptimizations(false);
+      }, 1000);
+      return;
+    }
+    try {
+      const data = await api.fetchSustainabilityOptimizations();
+      setSustainabilityOptimizations(data.optimizations || []);
+    } catch {
+      setSustainabilityOptimizations([
+        {
+          area: 'Operations',
+          recommendation: 'Optimization advisor is unavailable. Continue baseline resource monitoring.',
+          impact: 'Low'
+        }
+      ]);
+    } finally {
+      setLoadingOptimizations(false);
+    }
+  };
+
+  /**
+   * Requests live transportation recommendation for fan departure planning.
+   *
+   * @returns {Promise<void>}
+   */
+  const generateTransportationRecommendation = async () => {
+    setLoadingTransportation(true);
+    if (isServerOffline) {
+      setTimeout(() => {
+        setTransportationRecommendation({
+          recommended_mode: 'Shuttle Bus',
+          reasoning: 'Shuttle buses currently have the shortest simulated wait and avoid train platform buildup.',
+          suggested_departure_window: 'Depart within the next 15 minutes before the final-whistle surge.'
+        });
+        setLoadingTransportation(false);
+      }, 1000);
+      return;
+    }
+    try {
+      const data = await api.fetchTransportationRecommendation();
+      setTransportationRecommendation(data);
+    } catch {
+      setTransportationRecommendation({
+        recommended_mode: 'Monitor',
+        reasoning: 'Transportation advisor is unavailable. Use the live wait-time table for manual routing.',
+        suggested_departure_window: 'Recheck after the next simulator refresh.'
+      });
+    } finally {
+      setLoadingTransportation(false);
+    }
+  };
+
   return {
     shiftBriefing,
     loadingShift,
     sustainabilityReport,
     loadingSustainability,
+    sustainabilityOptimizations,
+    loadingOptimizations,
+    transportationRecommendation,
+    loadingTransportation,
     generateShiftBriefing,
-    generateSustainabilityBriefing
+    generateSustainabilityBriefing,
+    generateSustainabilityOptimizations,
+    generateTransportationRecommendation
   };
 }

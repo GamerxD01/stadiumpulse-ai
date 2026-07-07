@@ -102,6 +102,28 @@ export function fetchSustainabilityBriefing(language) {
 }
 
 /**
+ * Requests AI-optimized sustainability actions from live crowd, transit, and weather data.
+ *
+ * @returns {Promise<{optimizations: Array<{area: string, recommendation: string, impact: string}>}>}
+ *   Green operations recommendations.
+ * @throws {Error} If the server returns a non-OK response or is unreachable.
+ */
+export function fetchSustainabilityOptimizations() {
+  return request(`${API_BASE}/sustainability/optimize`);
+}
+
+/**
+ * Requests AI transportation guidance based on current departure congestion.
+ *
+ * @returns {Promise<{recommended_mode: string, reasoning: string, suggested_departure_window: string}>}
+ *   Transit recommendation details.
+ * @throws {Error} If the server returns a non-OK response or is unreachable.
+ */
+export function fetchTransportationRecommendation() {
+  return request(`${API_BASE}/transportation/recommend`);
+}
+
+/**
  * Triggers a simulated incident spike on the backend state machine.
  *
  * @param {'crowd' | 'medical' | 'transit' | 'clear'} spikeType - The type of incident to simulate.
