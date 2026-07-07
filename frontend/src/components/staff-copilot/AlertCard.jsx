@@ -1,3 +1,8 @@
+/**
+ * @fileoverview AlertCard component.
+ * Displays details of a single staff/volunteer safety warning, including severity indicators and recommended actions.
+ */
+
 import React from 'react';
 import ExplainAlertButton from './ExplainAlertButton';
 

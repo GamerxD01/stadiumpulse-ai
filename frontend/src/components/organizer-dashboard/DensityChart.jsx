@@ -1,3 +1,8 @@
+/**
+ * @fileoverview DensityChart component.
+ * Renders a responsive Recharts bar chart showing live crowd density percentages across all stadium zones.
+ */
+
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';

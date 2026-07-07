@@ -1,3 +1,8 @@
+/**
+ * @fileoverview OrganizerDashboard component.
+ * Displays real-time metrics, live crowd density charts, GenAI operations briefs, and sustainability post-match metrics.
+ */
+
 import React from 'react';
 import DensityChart from './DensityChart';
 import ShiftBriefingPanel from './ShiftBriefingPanel';

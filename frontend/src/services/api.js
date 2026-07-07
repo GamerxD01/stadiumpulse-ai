@@ -7,15 +7,26 @@
 const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api';
 
 /**
+ * Helper to perform HTTP requests and validate responses.
+ *
+ * @param {string} url - Target URL.
+ * @param {RequestInit} [options] - Fetch configuration parameters.
+ * @returns {Promise<any>} Response JSON data.
+ */
+async function request(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error('Offline');
+  return res.json();
+}
+
+/**
  * Fetches the current live simulator state (crowd densities, transit, incidents, weather).
  *
  * @returns {Promise<Object>} Stadium state object from the backend simulator.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchStatus() {
-  const res = await fetch(`${API_BASE}/status`);
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
+export function fetchStatus() {
+  return request(`${API_BASE}/status`);
 }
 
 /**
@@ -24,10 +35,8 @@ export async function fetchStatus() {
  * @returns {Promise<Array<Object>>} Array of structured alert objects with recommended actions.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchAlerts() {
-  const res = await fetch(`${API_BASE}/alerts`);
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
+export function fetchAlerts() {
+  return request(`${API_BASE}/alerts`);
 }
 
 /**
@@ -39,8 +48,8 @@ export async function fetchAlerts() {
  * @returns {Promise<{response: string, tools_called: Array<Object>}>} AI reply and tool trace.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function sendChatMessage(message, history, accessibilityMode, language) {
-  const res = await fetch(`${API_BASE}/chat`, {
+export function sendChatMessage(message, history, accessibilityMode, language) {
+  return request(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -50,8 +59,6 @@ export async function sendChatMessage(message, history, accessibilityMode, langu
       language
     })
   });
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
 }
 
 /**
@@ -62,14 +69,12 @@ export async function sendChatMessage(message, history, accessibilityMode, langu
  * @returns {Promise<{explanation: string}>} Simplified volunteer instruction text.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function explainAlert(alert, language) {
-  const res = await fetch(`${API_BASE}/explain-alert`, {
+export function explainAlert(alert, language) {
+  return request(`${API_BASE}/explain-alert`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ alert, language })
   });
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
 }
 
 /**
@@ -80,10 +85,8 @@ export async function explainAlert(alert, language) {
  * @returns {Promise<{briefing: string}>} Formatted shift briefing text.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchShiftBriefing(language) {
-  const res = await fetch(`${API_BASE}/briefing/shift?language=${encodeURIComponent(language)}`);
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
+export function fetchShiftBriefing(language) {
+  return request(`${API_BASE}/briefing/shift?language=${encodeURIComponent(language)}`);
 }
 
 /**
@@ -94,10 +97,8 @@ export async function fetchShiftBriefing(language) {
  * @returns {Promise<{report: string}>} Narrative sustainability report text.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchSustainabilityBriefing(language) {
-  const res = await fetch(`${API_BASE}/briefing/sustainability?language=${encodeURIComponent(language)}`);
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
+export function fetchSustainabilityBriefing(language) {
+  return request(`${API_BASE}/briefing/sustainability?language=${encodeURIComponent(language)}`);
 }
 
 /**
@@ -107,12 +108,10 @@ export async function fetchSustainabilityBriefing(language) {
  * @returns {Promise<{message: string, state: Object}>} Confirmation message and updated state.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function triggerSpike(spikeType) {
-  const res = await fetch(`${API_BASE}/trigger-spike`, {
+export function triggerSpike(spikeType) {
+  return request(`${API_BASE}/trigger-spike`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ spike_type: spikeType })
   });
-  if (!res.ok) throw new Error('Offline');
-  return res.json();
 }

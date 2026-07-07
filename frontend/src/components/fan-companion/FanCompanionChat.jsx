@@ -1,3 +1,8 @@
+/**
+ * @fileoverview FanCompanionChat component.
+ * Renders the GenAI chat interface for fans, supporting multilingual translation, accessibility toggles, and tool execution traces.
+ */
+
 import React, { useRef, useEffect } from 'react';
 import { Accessibility, Languages, Bus, MessageSquare, RefreshCw } from 'lucide-react';
 import ChatMessage from './ChatMessage';

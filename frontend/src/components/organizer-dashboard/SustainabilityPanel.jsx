@@ -1,3 +1,8 @@
+/**
+ * @fileoverview SustainabilityPanel component.
+ * Displays GenAI-generated post-match sustainability summaries derived from solar power and waste metrics.
+ */
+
 import React from 'react';
 import { Zap } from 'lucide-react';
 

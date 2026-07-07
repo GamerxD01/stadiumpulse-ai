@@ -176,3 +176,85 @@ def test_simulator_update_walks_under_spikes() -> None:
     # Train and Shuttle Bus wait times should be locked
     assert simulator.transit_status["Train"]["wait_time_mins"] == 45
     assert simulator.transit_status["Shuttle Bus"]["wait_time_mins"] == 25
+
+
+def test_sustainability_optimize_endpoint() -> None:
+    """Verifies GET /api/sustainability/optimize returns optimization suggestions."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    mock_resp = MagicMock()
+    mock_resp.text = json.dumps(
+        {"optimizations": [{"area": "Energy", "recommendation": "Eco mode active", "impact": "High"}]}
+    )
+
+    with patch("backend.orchestrator.orchestrator.client.models.generate_content", return_value=mock_resp):
+        response = client.get("/api/sustainability/optimize")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "optimizations" in data
+    assert len(data["optimizations"]) > 0
+    assert data["optimizations"][0]["area"] == "Energy"
+
+
+def test_transportation_recommend_endpoint() -> None:
+    """Verifies GET /api/transportation/recommend returns recommendations."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+    mock_resp = MagicMock()
+    mock_resp.text = json.dumps(
+        {"recommended_mode": "Train", "reasoning": "Fastest option", "suggested_departure_window": "Leave now"}
+    )
+
+    with patch("backend.orchestrator.orchestrator.client.models.generate_content", return_value=mock_resp):
+        response = client.get("/api/transportation/recommend")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["recommended_mode"] == "Train"
+    assert data["reasoning"] == "Fastest option"
+
+
+def test_sustainability_optimize_endpoint_fallback() -> None:
+    """Verifies GET /api/sustainability/optimize returns static recommendations on exception."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+
+    with patch(
+        "backend.orchestrator.orchestrator.client.models.generate_content", side_effect=Exception("API limit reached")
+    ):
+        response = client.get("/api/sustainability/optimize")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "optimizations" in data
+    assert len(data["optimizations"]) == 3
+    assert data["optimizations"][0]["area"] == "Energy"
+
+
+def test_transportation_recommend_endpoint_fallback() -> None:
+    """Verifies GET /api/transportation/recommend returns computed recommendations on exception."""
+    from fastapi.testclient import TestClient
+
+    from backend.main import app
+
+    client = TestClient(app)
+
+    with patch(
+        "backend.orchestrator.orchestrator.client.models.generate_content", side_effect=Exception("API offline")
+    ):
+        response = client.get("/api/transportation/recommend")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "recommended_mode" in data
+    assert "reasoning" in data

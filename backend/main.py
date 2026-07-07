@@ -4,6 +4,7 @@ Exposes REST API endpoints for real-time state simulator status, trigger spikes,
 Nominatim OSM geocoding, Open-Meteo weather forecast, and Gemini orchestrations.
 """
 
+import json
 import logging
 import os
 import time
@@ -278,6 +279,110 @@ async def chat_endpoint(req: ChatRequest) -> Dict[str, Any]:
 async def get_alerts() -> List[Dict[str, Any]]:
     """Evaluates active simulator incidents, returning structured safety warnings."""
     return await orchestrator.evaluate_alerts()
+
+
+@app.get("/api/sustainability/optimize")
+async def optimize_sustainability() -> Dict[str, Any]:
+    """Provides GenAI operational recommendations to optimize energy, waste, and water usage based on live stadium state."""
+    state = simulator.get_state()
+    prompt = f"""
+    Analyze the current live stadium state to recommend 3 actionable sustainability optimizations (e.g., energy conservation in low-occupancy zones, escalator power saving, water pressure scaling, waste bin sorting staff allocation).
+
+    Current Crowd Densities:
+    {json.dumps(state.crowd_density)}
+
+    Current Transit Congestion:
+    {json.dumps(state.transit_status)}
+
+    Current Weather:
+    {json.dumps(state.weather)}
+
+    Output a JSON object with a list key "optimizations" containing 3 items. Each item must have:
+    - "area": the operational area (e.g., "Energy", "Waste", "Water")
+    - "recommendation": the specific action recommended
+    - "impact": expected eco-impact (e.g., "High", "Medium", "Low")
+    """
+
+    from google.genai import types
+
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        system_instruction="You are a green-operations GenAI advisor at MetLife Stadium. Optimize resource usage.",
+    )
+
+    def fallback() -> str:
+        recommendations = [
+            {
+                "area": "Energy",
+                "recommendation": "Activate eco-mode for escalators at lower-concourse zones since Gate B is congested.",
+                "impact": "High",
+            },
+            {
+                "area": "Waste",
+                "recommendation": "Deploy mobile recycling team to Gate A and Concourse East to manage high density zones.",
+                "impact": "Medium",
+            },
+            {
+                "area": "Water",
+                "recommendation": "Reduce seating bowl water pressure by 10% during active match play.",
+                "impact": "Medium",
+            },
+        ]
+        return json.dumps({"optimizations": recommendations})
+
+    resp_str = await orchestrator._safe_generate(prompt, config, fallback)
+    try:
+        return json.loads(resp_str)  # type: ignore[no-any-return]
+    except Exception:
+        return json.loads(fallback())  # type: ignore[no-any-return]
+
+
+@app.get("/api/transportation/recommend")
+async def recommend_transportation() -> Dict[str, Any]:
+    """Provides GenAI recommendations on departure mode and timing based on live congestion."""
+    state = simulator.get_state()
+    prompt = f"""
+    Analyze the current transit congestion and wait times to recommend the best departure modes and timing.
+
+    Current Transit Status:
+    {json.dumps(state.transit_status)}
+
+    Current Crowd Densities:
+    {json.dumps(state.crowd_density)}
+
+    Output a JSON object with:
+    - "recommended_mode": the best transport mode (Train, Shuttle Bus, or Rideshare)
+    - "reasoning": why this mode is suggested
+    - "suggested_departure_window": description of when to leave (e.g. "Leave immediately", "Wait 30 minutes")
+    """
+
+    from google.genai import types
+
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        system_instruction="You are a transit intelligence GenAI advisor at MetLife Stadium. Optimize fan departures.",
+    )
+
+    def fallback() -> str:
+        best_mode = "Shuttle Bus"
+        min_wait = 999
+        for mode, info in state.transit_status.items():
+            if info["wait_time_mins"] < min_wait:
+                min_wait = info["wait_time_mins"]
+                best_mode = mode
+        return json.dumps(
+            {
+                "recommended_mode": best_mode,
+                "reasoning": f"Based on live data, {best_mode} has the lowest wait time of {min_wait} minutes.",
+                "suggested_departure_window": "Depart within the next 15 minutes to beat the peak exit surge.",
+            }
+        )
+
+    resp_str = await orchestrator._safe_generate(prompt, config, fallback)
+    try:
+        return json.loads(resp_str)  # type: ignore[no-any-return]
+    except Exception:
+        return json.loads(fallback())  # type: ignore[no-any-return]
 
 
 class ExplainRequest(BaseModel):

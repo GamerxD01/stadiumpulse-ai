@@ -195,16 +195,16 @@ A complete 3 to 5-minute narrative script written for your judges presentation i
 
 StadiumPulse AI was built specifically to address the FIFA World Cup 2026 problem statement. The table below maps each PS pillar directly to a concrete, implemented feature:
 
-| PS Pillar | StadiumPulse AI Implementation | Status |
-|---|---|---|
-| Navigation | `get_route()` tool — step-by-step stadium wayfinding with Gemini reasoning | ✅ Implemented |
-| Crowd Management | `get_crowd_density()` tool + Staff Copilot alert feed with AI safety plans | ✅ Implemented |
-| Accessibility | `get_accessibility_info()` tool — zone-specific ADA elevators, restrooms, sensory rooms, hearing loops | ✅ Implemented |
-| Transportation | `get_transit_status()` tool — live rail/shuttle/rideshare wait times | ✅ Implemented |
-| Sustainability | `generate_sustainability_briefing()` — AI narrative of post-match green metrics | ✅ Implemented |
-| Multilingual Assistance | Gemini auto-detects 15 languages and responds natively with no translation API | ✅ Implemented |
-| Operational Intelligence | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | ✅ Implemented |
-| Real-Time Decision Support | Live simulator + Gemini evaluate_alerts() with confidence scores and structured action plans | ✅ Implemented |
+| PS Pillar | StadiumPulse AI Implementation | Implemented In | Status |
+|---|---|---|---|
+| **Navigation** | `get_route()` tool — step-by-step stadium wayfinding with Gemini reasoning | [`orchestrator.py:get_route`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L53) | ✅ Solid |
+| **Crowd Management** | `get_crowd_density()` tool + Staff Copilot alert feed with AI safety plans | [`orchestrator.py:get_crowd_density`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L24) | ✅ Solid |
+| **Accessibility** | `get_accessibility_info()` tool — zone-specific ADA elevators, restrooms, sensory rooms, hearing loops | [`orchestrator.py:get_accessibility_info`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L125) | ✅ Solid |
+| **Transportation** | Live rail/shuttle/rideshare wait status + GenAI route recommendation suggestions | [`main.py:recommend_transportation`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L338) | ✅ Solid |
+| **Sustainability** | `/api/sustainability/optimize` endpoint (recommends energy/waste management adjustments) + GenAI narrative summary | [`main.py:optimize_sustainability`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py#L284) | ✅ Solid |
+| **Multilingual Assistance** | Gemini auto-detects 15 languages and responds natively with no translation API | [`orchestrator.py:_build_conversation_contents`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L404) | ✅ Solid |
+| **Operational Intelligence** | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | [`orchestrator.py:generate_shift_briefing`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L660) | ✅ Solid |
+| **Real-Time Decision Support** | Live simulator + Gemini `evaluate_alerts()` with confidence scores and structured action plans | [`orchestrator.py:evaluate_alerts`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L542) | ✅ Solid |
 
 > See [MULTILINGUAL.md](./MULTILINGUAL.md) for full multilingual capability documentation with example prompts in 6 languages.
 
