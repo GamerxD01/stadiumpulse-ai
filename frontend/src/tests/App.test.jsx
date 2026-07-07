@@ -2,6 +2,8 @@ import React from 'react';
 import { describe, test, expect, vi, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
+import ChatMessage from '../components/fan-companion/ChatMessage';
+import ErrorBanner from '../components/shared/ErrorBanner';
 
 // Mock scrollIntoView since JSDOM does not implement it
 beforeAll(() => {
@@ -69,4 +71,75 @@ describe('StadiumPulse AI Frontend Tests', () => {
     expect(screen.getByText(/Operations Shift Briefing/i)).toBeTruthy();
     expect(screen.getByText(/Sustainability Narrative/i)).toBeTruthy();
   });
+
+  // -----------------------------------------------------------------------
+  // New tests — closing Code Quality + Testing gaps
+  // -----------------------------------------------------------------------
+
+  test('accessibility mode toggle checkbox is present and toggleable', () => {
+    render(<App />);
+    // The accessibility toggle label text is visible in the fan tab sidebar
+    const toggle = screen.getByLabelText(/Toggle step-free accessible routes only/i);
+    expect(toggle).toBeTruthy();
+    // It starts unchecked
+    expect(toggle.checked).toBe(false);
+    // Click to enable
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(true);
+    // Click to disable
+    fireEvent.click(toggle);
+    expect(toggle.checked).toBe(false);
+  });
+
+  test('pressing Enter key in chat input submits the message', () => {
+    render(<App />);
+    const input = screen.getByPlaceholderText('Ask StadiumPulse AI...');
+    fireEvent.change(input, { target: { value: 'Where is the nearest exit?' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+    // Message should appear in the conversation
+    expect(screen.getByText('Where is the nearest exit?')).toBeTruthy();
+  });
+
+  test('organizer panel contains generate briefing buttons', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText(/Organizer Panel/i));
+
+    // Both generate buttons should be present in the organizer dashboard
+    const shiftBtn = screen.getByRole('button', { name: /Generate Shift Briefing/i });
+    const sustainBtn = screen.getByRole('button', { name: /Generate Narrative/i });
+    expect(shiftBtn).toBeTruthy();
+    expect(sustainBtn).toBeTruthy();
+  });
+
+  test('navigation tabs have correct ARIA role attributes', () => {
+    render(<App />);
+    const tabs = screen.getAllByRole('tab');
+    // There should be exactly 3 tabs
+    expect(tabs.length).toBe(3);
+    // The first tab (Fan Companion) should be selected by default
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[1].getAttribute('aria-selected')).toBe('false');
+    expect(tabs[2].getAttribute('aria-selected')).toBe('false');
+  });
+
+  test('ChatMessage renders tool call badges when tools are provided', () => {
+    const msg = {
+      role: 'model',
+      text: 'Gate B density is 40%.',
+      tools: [{ name: 'get_crowd_density', args: { zone: 'Gate B' } }]
+    };
+    render(<ChatMessage msg={msg} />);
+    expect(screen.getByText('Gate B density is 40%.')).toBeTruthy();
+    // The tool badge chip should display the function name with arg key
+    expect(screen.getByText(/get_crowd_density/)).toBeTruthy();
+  });
+
+  test('ErrorBanner component renders offline warning message', () => {
+    render(<ErrorBanner />);
+    // ErrorBanner should render an accessible offline warning
+    const banner = screen.getByRole('alert');
+    expect(banner).toBeTruthy();
+  });
 });
+

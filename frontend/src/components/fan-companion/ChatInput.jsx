@@ -1,6 +1,17 @@
 import React from 'react';
 import { Send } from 'lucide-react';
 
+/**
+ * ChatInput — Controlled text input and submit button for the Fan Companion chat.
+ *
+ * Supports keyboard submission via the Enter key and disables both the input field
+ * and the send button while a chat response is in-flight to prevent duplicate sends.
+ *
+ * @param {string}   chatInput    - The current controlled input value.
+ * @param {Function} setChatInput - Setter to update the input value on change.
+ * @param {boolean}  sendingChat  - When true, input and button are disabled.
+ * @param {Function} onSubmit     - Callback invoked when the user presses Enter or clicks Send.
+ */
 export default function ChatInput({ chatInput, setChatInput, sendingChat, onSubmit }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {

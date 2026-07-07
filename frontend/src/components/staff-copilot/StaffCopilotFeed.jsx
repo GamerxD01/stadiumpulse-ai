@@ -2,6 +2,23 @@ import React from 'react';
 import { Activity, Flame, AlertTriangle, Bus, ShieldAlert, UserCheck } from 'lucide-react';
 import AlertCard from './AlertCard';
 
+/**
+ * StaffCopilotFeed — Displays the Staff Copilot incident control panel and live AI-evaluated alert feed.
+ *
+ * Left column renders spike trigger buttons (crowd, medical, transit, clear) for hackathon demo
+ * purposes. Right column streams real-time Gemini-evaluated safety plans with recommended actions,
+ * confidence scores, and a volunteer-friendly "Explain Alert" expansion panel.
+ *
+ * @param {Array<Object>}  alerts              - Array of evaluated alert objects from the backend.
+ * @param {string}         language            - Currently selected output language for explanations.
+ * @param {Function}       triggerSpike        - Callback to fire a named incident spike.
+ * @param {Function}       onExplain           - Callback to fetch a plain-language alert explanation.
+ * @param {string|null}    explainingAlertId   - ID of the alert currently being explained.
+ * @param {string}         alertExplanation    - The returned volunteer-friendly explanation text.
+ * @param {boolean}        loadingExplanation  - True while an explanation is being fetched.
+ * @param {Function}       setExplainingAlertId - Setter to collapse the explanation panel.
+ */
+
 export default function StaffCopilotFeed({
   alerts = [],
   language,
@@ -32,8 +49,10 @@ export default function StaffCopilotFeed({
 
           <div className="flex flex-col gap-3">
             <button
+              id="spike-btn-crowd"
               onClick={() => triggerSpike('crowd')}
               className="flex items-center justify-between p-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-left cursor-pointer"
+              aria-label="Simulate crowd density spike at Gate B"
             >
               <div>
                 <span className="text-xs font-bold block">1. Simulate Crowd Density Spike</span>
@@ -43,8 +62,10 @@ export default function StaffCopilotFeed({
             </button>
 
             <button
+              id="spike-btn-medical"
               onClick={() => triggerSpike('medical')}
               className="flex items-center justify-between p-3.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 transition text-left cursor-pointer"
+              aria-label="Simulate medical incident at Gate C escalator"
             >
               <div>
                 <span className="text-xs font-bold block">2. Simulate Medical Incident</span>
@@ -56,8 +77,10 @@ export default function StaffCopilotFeed({
             </button>
 
             <button
+              id="spike-btn-transit"
               onClick={() => triggerSpike('transit')}
               className="flex items-center justify-between p-3.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition text-left cursor-pointer"
+              aria-label="Simulate transit delay and Transit Hub gridlock"
             >
               <div>
                 <span className="text-xs font-bold block">3. Simulate Transit Delay</span>
@@ -71,8 +94,10 @@ export default function StaffCopilotFeed({
             <div className="border-t border-slate-800 my-1"></div>
 
             <button
+              id="spike-btn-clear"
               onClick={() => triggerSpike('clear')}
               className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold text-center transition shadow-lg shadow-emerald-600/10 cursor-pointer"
+              aria-label="Reset simulator to all-normal baseline state"
             >
               Reset Simulator (All Normal)
             </button>

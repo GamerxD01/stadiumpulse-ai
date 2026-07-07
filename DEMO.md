@@ -24,25 +24,32 @@ This script guides you through a **3 to 5-minute live presentation** of StadiumP
 
 ---
 
-## Demo Step 1: The Fan Companion & Accessibility (60 seconds)
+## Demo Step 1: The Fan Companion, Accessibility & Multilingual (75 seconds)
 
 *   **Action**: Switch the screen to the live web application on the **Fan Companion** tab.
     ![Initial Page Load](file:///C:/Users/Chandra%20Prakash/.gemini/antigravity-ide/brain/4b230e1c-e18b-4252-ae8a-78ac178b146b/initial_page_load_1783340724032.png)
 *   **Narrator Voiceover**:
-    > "Here is our Fan Companion chat UI, designed for fans inside the venue. We've integrated an accessibility concierge switch. Let's ask it a wayfinding question: 
-    > 
+    > "Here is our Fan Companion chat UI, designed for fans inside the venue. We've integrated an accessibility concierge switch. Let's ask it a wayfinding question:
+    >
     > *'How do I get to the Seating Bowl from Gate A? I use a wheelchair.'*"
 *   **Action**: Click the first suggestion pill on screen or type the query.
     ![ADA Wayfinding Response](file:///C:/Users/Chandra%20Prakash/.gemini/antigravity-ide/brain/4b230e1c-e18b-4252-ae8a-78ac178b146b/fan_companion_response_1783340742199.png)
 *   **Narrator Voiceover**:
-    > "Notice the orchestrator automatically detects the need for step-free access. It invokes our live `get_route` tool with `accessibility_mode=True` and outputs elevator and ramp-specific directions.
-    > 
-    > Now, let's test its multilingual capabilities. A fan from Spain asks: 
-    > 
+    > "Notice the orchestrator automatically detects the need for step-free access. It invokes our `get_route` tool with `accessibility_mode=True` for elevator directions **and** our dedicated `get_accessibility_info` tool — which returns zone-specific ADA elevator banks, accessible restrooms, sensory quiet rooms, and hearing loop locations.
+    >
+    > This is a first-class tool, not just a route flag. Now let's ask about sensory facilities directly:
+    >
+    > *'Is there a quiet sensory room near the Concourse East for my autistic child?'*"
+*   **Action**: Type the sensory room query and send.
+*   **Narrator Voiceover**:
+    > "The AI calls `get_accessibility_info('Concourse East')` and returns the exact location: Quiet Room CE-S1 on Level 2 — a noise-cancelling, low-light environment — plus the induction hearing loop coverage. Real, actionable data, not a generic answer.
+    >
+    > Now let's test multilingual. A fan from Spain asks:
+    >
     > *'¿Cómo está la congestión del tren y cuánto tengo que esperar?'*"
 *   **Action**: Paste the Spanish query and click send.
 *   **Narrator Voiceover**:
-    > "The system natively detects Spanish, queries the `get_transit_status` tool to check turnstile and transit congestion, and returns a detailed response entirely in Spanish — no external translation layers required."
+    > "The system natively detects Spanish, queries the `get_transit_status` tool, and returns a full response in Spanish — no external translation API required. We support 15 languages natively."
 
 ---
 

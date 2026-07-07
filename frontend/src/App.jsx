@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import useSimulatorState from './hooks/useSimulatorState';
 import useAlerts from './hooks/useAlerts';
 import useChat from './hooks/useChat';
-import * as api from './services/api';
+import useStaffBriefing from './hooks/useStaffBriefing';
 
 import ErrorBanner from './components/shared/ErrorBanner';
 import Header from './components/layout/Header';
@@ -35,54 +35,14 @@ export default function App() {
     setMessages,
     handleSendMessage
   } = useChat(isServerOffline, accessibilityMode, stadiumState);
-
-  // Local briefing state
-  const [shiftBriefing, setShiftBriefing] = useState('');
-  const [loadingShift, setLoadingShift] = useState(false);
-  const [sustainabilityReport, setSustainabilityReport] = useState('');
-  const [loadingSustainability, setLoadingSustainability] = useState(false);
-
-  const generateShiftBriefing = async () => {
-    setLoadingShift(true);
-    if (isServerOffline) {
-      setTimeout(() => {
-        setShiftBriefing(
-          '• Operational briefing for shift handover:\n- Gate B turnstiles experienced a critical crowd density peak of 96%. Crowds have been successfully routed to Gates A/C/D.\n- Medical response treated an escalator incident near Gate C; escalators are back in operation.\n- Train transit congestion remains high; rideshare queues remain active at Zone 4.'
-        );
-        setLoadingShift(false);
-      }, 1000);
-      return;
-    }
-    try {
-      const data = await api.fetchShiftBriefing();
-      setShiftBriefing(data.briefing);
-    } catch {
-      setShiftBriefing('Error generating shift briefing.');
-    } finally {
-      setLoadingShift(false);
-    }
-  };
-
-  const generateSustainabilityBriefing = async () => {
-    setLoadingSustainability(true);
-    if (isServerOffline) {
-      setTimeout(() => {
-        setSustainabilityReport(
-          'The sustainability report indicates a solid 82.4% waste recycling diversion rate. Solar contribution added 8,400 kWh of clean power to the stadium grid. General grade: A-. One water anomaly: high usage reported at Concourse East restrooms, resolved by fixtures inspections.'
-        );
-        setLoadingSustainability(false);
-      }, 1000);
-      return;
-    }
-    try {
-      const data = await api.fetchSustainabilityBriefing();
-      setSustainabilityReport(data.report);
-    } catch {
-      setSustainabilityReport('Error generating sustainability summary.');
-    } finally {
-      setLoadingSustainability(false);
-    }
-  };
+  const {
+    shiftBriefing,
+    loadingShift,
+    sustainabilityReport,
+    loadingSustainability,
+    generateShiftBriefing,
+    generateSustainabilityBriefing
+  } = useStaffBriefing(isServerOffline);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">

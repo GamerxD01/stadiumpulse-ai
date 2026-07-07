@@ -111,6 +111,47 @@ def get_transit_status(route_or_station: str) -> str:
     })
 
 
+# ADA accessibility data per MetLife Stadium zone.
+# Defined at module level to avoid dict reconstruction on every tool invocation.
+_ACCESSIBILITY_DATA: Dict[str, Dict[str, Any]] = {
+    "GATE A": {
+        "elevators": ["Elevator A1 (North Lobby, Level 1→4)", "Elevator A2 (South Entry, Level 1→2)"],
+        "ada_restrooms": ["Concourse Level 1 — Gate A North", "Concourse Level 2 — Section 101"],
+        "wheelchair_dropoff": "Blue ADA Dropoff Lane — Gate A East Entrance",
+        "sensory_room": None,
+        "hearing_loop": "Available at Guest Services booth — Gate A",
+    },
+    "GATE B": {
+        "elevators": ["Elevator B1 (West Lobby, Level 1→3)"],
+        "ada_restrooms": ["Concourse Level 1 — Gate B West"],
+        "wheelchair_dropoff": "ADA Dropoff Zone — Gate B Loading Bay",
+        "sensory_room": None,
+        "hearing_loop": "Available at Guest Services booth — Gate B",
+    },
+    "CONCOURSE EAST": {
+        "elevators": ["Elevator CE1 (Main Hall, Level 1→3)", "Elevator CE2 (Annex, Level 1→2)"],
+        "ada_restrooms": ["Concourse East Level 1", "Concourse East Level 2 — near Section 120"],
+        "wheelchair_dropoff": "ADA Zone — Concourse East Service Entrance",
+        "sensory_room": "Quiet Room CE-S1 — Concourse East Level 2 (noise-cancelling, low-light)",
+        "hearing_loop": "Induction loop enabled throughout Concourse East",
+    },
+    "SEATING BOWL": {
+        "elevators": ["Elevator SB1 (NW Corner)", "Elevator SB2 (SE Corner)", "Elevator SB3 (SW Corner)"],
+        "ada_restrooms": ["ADA Restroom — Row 1 Aisle 12", "ADA Restroom — Row 1 Aisle 30"],
+        "wheelchair_dropoff": "Wheelchair seating sections 104, 110, 120, 130 — direct aisle access",
+        "sensory_room": "Sensory Suite SB-Q1 — Level 1 (low-stimulation environment available upon request)",
+        "hearing_loop": "FM hearing loop transmitters available at all entry gates",
+    },
+    "TRANSIT HUB": {
+        "elevators": ["Elevator TH1 (Rail Platform Level → Street Level)"],
+        "ada_restrooms": ["Transit Hub — Accessible Restroom Block A"],
+        "wheelchair_dropoff": "Designated ADA Bus Bay — Transit Hub Bay 4",
+        "sensory_room": None,
+        "hearing_loop": "Hearing loop at Transit Hub Information Desk",
+    },
+}
+
+
 def get_accessibility_info(zone: str) -> str:
     """Gets zone-specific ADA accessibility information for MetLife Stadium.
 
@@ -127,47 +168,9 @@ def get_accessibility_info(zone: str) -> str:
     """
     zone_upper = zone.upper()
 
-    ACCESSIBILITY_DATA: Dict[str, Dict[str, Any]] = {
-        "GATE A": {
-            "elevators": ["Elevator A1 (North Lobby, Level 1→4)", "Elevator A2 (South Entry, Level 1→2)"],
-            "ada_restrooms": ["Concourse Level 1 — Gate A North", "Concourse Level 2 — Section 101"],
-            "wheelchair_dropoff": "Blue ADA Dropoff Lane — Gate A East Entrance",
-            "sensory_room": None,
-            "hearing_loop": "Available at Guest Services booth — Gate A",
-        },
-        "GATE B": {
-            "elevators": ["Elevator B1 (West Lobby, Level 1→3)"],
-            "ada_restrooms": ["Concourse Level 1 — Gate B West"],
-            "wheelchair_dropoff": "ADA Dropoff Zone — Gate B Loading Bay",
-            "sensory_room": None,
-            "hearing_loop": "Available at Guest Services booth — Gate B",
-        },
-        "CONCOURSE EAST": {
-            "elevators": ["Elevator CE1 (Main Hall, Level 1→3)", "Elevator CE2 (Annex, Level 1→2)"],
-            "ada_restrooms": ["Concourse East Level 1", "Concourse East Level 2 — near Section 120"],
-            "wheelchair_dropoff": "ADA Zone — Concourse East Service Entrance",
-            "sensory_room": "Quiet Room CE-S1 — Concourse East Level 2 (noise-cancelling, low-light)",
-            "hearing_loop": "Induction loop enabled throughout Concourse East",
-        },
-        "SEATING BOWL": {
-            "elevators": ["Elevator SB1 (NW Corner)", "Elevator SB2 (SE Corner)", "Elevator SB3 (SW Corner)"],
-            "ada_restrooms": ["ADA Restroom — Row 1 Aisle 12", "ADA Restroom — Row 1 Aisle 30"],
-            "wheelchair_dropoff": "Wheelchair seating sections 104, 110, 120, 130 — direct aisle access",
-            "sensory_room": "Sensory Suite SB-Q1 — Level 1 (low-stimulation environment available upon request)",
-            "hearing_loop": "FM hearing loop transmitters available at all entry gates",
-        },
-        "TRANSIT HUB": {
-            "elevators": ["Elevator TH1 (Rail Platform Level → Street Level)"],
-            "ada_restrooms": ["Transit Hub — Accessible Restroom Block A"],
-            "wheelchair_dropoff": "Designated ADA Bus Bay — Transit Hub Bay 4",
-            "sensory_room": None,
-            "hearing_loop": "Hearing loop at Transit Hub Information Desk",
-        },
-    }
-
-    # Match the closest zone key
+    # Match the closest zone key in the module-level constant
     matched_key = None
-    for key in ACCESSIBILITY_DATA:
+    for key in _ACCESSIBILITY_DATA:
         if key in zone_upper or zone_upper in key:
             matched_key = key
             break
@@ -179,7 +182,7 @@ def get_accessibility_info(zone: str) -> str:
             "ada_hotline": "+1-800-555-ADA1",
         })
 
-    info = ACCESSIBILITY_DATA[matched_key]
+    info = dict(_ACCESSIBILITY_DATA[matched_key])  # shallow copy to avoid mutating the module constant
     info["zone"] = matched_key.title()
     return json.dumps(info)
 

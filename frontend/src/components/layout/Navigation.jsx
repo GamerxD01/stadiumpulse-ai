@@ -3,8 +3,16 @@ import { Compass, ShieldAlert, BarChart3 } from 'lucide-react';
 
 export default function Navigation({ activeTab, setActiveTab, alertsCount = 0 }) {
   return (
-    <nav className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl" aria-label="Main Navigation">
+    <nav
+      className="flex bg-slate-950 p-1 border border-slate-800 rounded-xl"
+      aria-label="Main Navigation"
+      role="tablist"
+    >
       <button
+        role="tab"
+        aria-selected={activeTab === 'fan'}
+        aria-controls="main-content"
+        id="tab-fan"
         onClick={() => setActiveTab('fan')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
           activeTab === 'fan' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -14,6 +22,10 @@ export default function Navigation({ activeTab, setActiveTab, alertsCount = 0 })
         Fan Companion
       </button>
       <button
+        role="tab"
+        aria-selected={activeTab === 'staff'}
+        aria-controls="main-content"
+        id="tab-staff"
         onClick={() => setActiveTab('staff')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
           activeTab === 'staff' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -28,6 +40,10 @@ export default function Navigation({ activeTab, setActiveTab, alertsCount = 0 })
         )}
       </button>
       <button
+        role="tab"
+        aria-selected={activeTab === 'organizer'}
+        aria-controls="main-content"
+        id="tab-organizer"
         onClick={() => setActiveTab('organizer')}
         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
           activeTab === 'organizer'

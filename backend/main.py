@@ -4,6 +4,7 @@ Exposes REST API endpoints for real-time state simulator status, trigger spikes,
 Nominatim OSM geocoding, Open-Meteo weather forecast, and Gemini orchestrations.
 """
 
+import logging
 import os
 import time
 from typing import Any, Dict, List
@@ -20,6 +21,8 @@ from backend.generator import simulator
 from backend.orchestrator import orchestrator
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -134,7 +137,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         request: The incoming request.
         exc: The raw exception thrown.
     """
-    print(f"Internal error: {str(exc)}")
+    logger.exception("Unhandled server error: %s", str(exc))
     return JSONResponse(
         status_code=500,
         content={"detail": "An internal operational error occurred. The team has been notified."},

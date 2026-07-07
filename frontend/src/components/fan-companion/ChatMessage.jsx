@@ -1,6 +1,16 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
 
+/**
+ * ChatMessage — Renders a single conversation bubble in the Fan Companion chat feed.
+ *
+ * Displays user messages right-aligned in indigo and AI model responses left-aligned
+ * in slate. When the model response includes tool call metadata, renders compact
+ * tool badge chips below the message text showing which orchestrator functions fired.
+ *
+ * @param {{ role: string, text: string, tools?: Array<{name: string, args: Object}> }} msg
+ *   The message object to render. `role` is either "user" or "model".
+ */
 export default function ChatMessage({ msg }) {
   const isUser = msg.role === 'user';
   return (

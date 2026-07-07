@@ -6,7 +6,7 @@ including zone densities, transit wait times, and emergency incidents.
 
 import random
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel
 
@@ -15,12 +15,12 @@ class Incident(BaseModel):
     """Pydantic model representing an operational safety or medical incident."""
 
     id: str
-    type: str  # medical, crowd, transit, security, safety
+    type: Literal["medical", "crowd", "transit", "security", "safety"]
     location: str
-    severity: str  # Low, Medium, High, Critical
+    severity: Literal["Low", "Medium", "High", "Critical"]
     description: str
     timestamp: float
-    status: str  # Active, Resolved
+    status: Literal["Active", "Resolved"]
 
 
 class StadiumState(BaseModel):
