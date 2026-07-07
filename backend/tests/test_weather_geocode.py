@@ -6,6 +6,7 @@ fallback behavior, and edge cases (no results, API errors).
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 from fastapi.testclient import TestClient
 
 from backend.main import app
@@ -47,8 +48,8 @@ def test_weather_happy_path():
 
 
 def test_weather_fallback_on_exception():
-    """GET /api/weather falls back to simulator mock when httpx raises."""
-    with patch("backend.main.httpx.AsyncClient", side_effect=Exception("Network error")):
+    """GET /api/weather falls back to simulator mock when httpx raises a network error."""
+    with patch("backend.main.httpx.AsyncClient", side_effect=httpx.ConnectError("Network error")):
         response = client.get("/api/weather")
 
     assert response.status_code == 200
@@ -146,8 +147,8 @@ def test_geocode_api_error_status():
 
 
 def test_geocode_exception_raises_500():
-    """GET /api/geocode returns 500 when httpx raises any exception."""
-    with patch("backend.main.httpx.AsyncClient", side_effect=Exception("DNS failure")):
+    """GET /api/geocode returns 500 when httpx raises a network-level error."""
+    with patch("backend.main.httpx.AsyncClient", side_effect=httpx.ConnectError("DNS failure")):
         response = client.get("/api/geocode?q=MetLife+Stadium")
 
     assert response.status_code == 500

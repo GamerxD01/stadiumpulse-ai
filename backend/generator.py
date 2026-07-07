@@ -213,13 +213,16 @@ class StadiumSimulator:
         """
         if self.spike_active and self.spike_type == "crowd" and zone in ("Gate B", "Concourse West"):
             delta = random.randint(-2, 2)
-            self.crowd_density[zone] = max(CROWD_SPIKE_DENSITY_MIN, min(CROWD_SPIKE_DENSITY_MAX, self.crowd_density[zone] + delta))
+            clamped = max(CROWD_SPIKE_DENSITY_MIN, min(CROWD_SPIKE_DENSITY_MAX, self.crowd_density[zone] + delta))
+            self.crowd_density[zone] = clamped
         elif self.spike_active and self.spike_type == "transit" and zone == "Transit Hub":
             delta = random.randint(-1, 2)
-            self.crowd_density[zone] = max(TRANSIT_SPIKE_DENSITY_MIN, min(TRANSIT_SPIKE_DENSITY_MAX, self.crowd_density[zone] + delta))
+            clamped = max(TRANSIT_SPIKE_DENSITY_MIN, min(TRANSIT_SPIKE_DENSITY_MAX, self.crowd_density[zone] + delta))
+            self.crowd_density[zone] = clamped
         else:
             delta = random.randint(-3, 3)
-            self.crowd_density[zone] = max(NORMAL_DENSITY_MIN, min(NORMAL_DENSITY_MAX, self.crowd_density[zone] + delta))
+            clamped = max(NORMAL_DENSITY_MIN, min(NORMAL_DENSITY_MAX, self.crowd_density[zone] + delta))
+            self.crowd_density[zone] = clamped
 
     def _update_transit_mode(self, mode: str) -> None:
         """Applies a bounded random walk to a single transit mode's wait time.

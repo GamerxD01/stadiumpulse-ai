@@ -1,0 +1,43 @@
+[MESSAGES CONTROL]
+# Suppress false-positive or intentionally-accepted warnings:
+#
+# R0903 (too-few-public-methods): Middleware classes (RateLimitMiddleware,
+#   SecurityHeadersMiddleware) are framework adapters — they deliberately
+#   expose only `dispatch()`. Requiring 2+ public methods on ASGI adapters
+#   is a false positive.
+#
+# W0621 (redefined-outer-name): FastAPI uses `app` both as the test-fixture
+#   parameter name and as the module-level FastAPI() instance. The shadowing
+#   is intentional and follows the official FastAPI testing pattern.
+#
+# W0613 (unused-argument): ASGI middleware `dispatch(request, call_next)`
+#   requires the `request` parameter in the signature even when it is not
+#   directly read — it is forwarded via call_next().
+#
+# R0902 (too-many-instance-attributes): StadiumSimulator manages 9 runtime
+#   state attributes (zones, modes, densities, timestamps, spike state).
+#   Splitting them across multiple objects would obscure the simulation
+#   domain model — this is an appropriate use of instance attributes.
+disable=R0903,W0621,W0613,R0902
+
+[FORMAT]
+# Match the line length configured in .ruff.toml for consistency.
+# The default pylint limit of 100 chars is intentionally overridden here.
+max-line-length=120
+
+[DESIGN]
+# Allow up to 20 local variables (chat() orchestrates a multi-step tool loop
+# with iteration counter, content list, model parts, tool response list, and
+# result string — 15 is too low for async LLM orchestration code).
+max-locals=20
+
+# Allow broader except clauses — the Gemini SDK raises runtime errors from
+# gRPC, proto-plus, and google-auth that do not share a common base class
+# we can safely catch without also catching unrelated exceptions.
+# W0718 (broad-exception-caught) is suppressed for this reason.
+[EXCEPTIONS]
+overgeneral-exceptions=builtins.BaseException
+
+[BASIC]
+# Standard single-letter variable names used in loops and generator contexts.
+good-names=i,j,k,e,v,k,n,f,t,fc

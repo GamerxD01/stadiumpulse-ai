@@ -176,9 +176,14 @@ def get_accessibility_info(zone: str) -> str:
             break
 
     if not matched_key:
+        note = (
+            "Detailed accessibility info not available for this zone. "
+            "Please visit the nearest Guest Services booth or call "
+            "Stadium Accessibility Line: +1-800-555-ADA1."
+        )
         return json.dumps({
             "zone": zone,
-            "note": "Detailed accessibility info not available for this zone. Please visit the nearest Guest Services booth or call Stadium Accessibility Line: +1-800-555-ADA1.",
+            "note": note,
             "ada_hotline": "+1-800-555-ADA1",
         })
 
@@ -443,7 +448,10 @@ class GeminiOrchestrator:
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         response_schema=StaffAlertModel,
-                        system_instruction="You are a senior safety director at MetLife Stadium. Return a structured safety response for volunteers.",
+                        system_instruction=(
+                            "You are a senior safety director at MetLife Stadium. "
+                            "Return a structured safety response for volunteers."
+                        ),
                     ),
                 )
 
@@ -498,8 +506,11 @@ class GeminiOrchestrator:
                 ),
             )
             return response.text or "Follow the listed recommended actions and stay safe."
-        except Exception as e:
-            return f"Simplify guidelines: 1. Head to {alert_data.get('title')}. 2. Direct crowd flow. 3. Help fans. (Error: {str(e)})"
+        except Exception as e:  # noqa: BLE001 — Gemini SDK raises heterogeneous runtime errors
+            return (
+                f"Simplify guidelines: 1. Head to {alert_data.get('title')}. "
+                f"2. Direct crowd flow. 3. Help fans. (Error: {str(e)})"
+            )
 
     async def generate_shift_briefing(self, incidents: List[Dict[str, Any]], crowd_density: Dict[str, int]) -> str:
         """Generates operations shift briefing logs summary using Gemini.
@@ -522,7 +533,10 @@ class GeminiOrchestrator:
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="You are a stadium ops chief. Output exactly 3 high-impact, professional bullet points."
+                    system_instruction=(
+                        "You are a stadium ops chief. "
+                        "Output exactly 3 high-impact, professional bullet points."
+                    )
                 ),
             )
             return response.text or "All clear. Normal operations active."
@@ -549,7 +563,10 @@ class GeminiOrchestrator:
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="You are a green-operations advisor. Summarize sustainability performance in 2 paragraphs."
+                    system_instruction=(
+                        "You are a green-operations advisor. "
+                        "Summarize sustainability performance in 2 paragraphs."
+                    )
                 ),
             )
             return response.text or "Green metrics stable. MetLife Stadium operations within green limits."

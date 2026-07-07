@@ -211,7 +211,7 @@ async def get_weather(lat: float = 40.8135, lon: float = -74.0744) -> Dict[str, 
                     "time": current.get("time"),
                     "source": "Open-Meteo API",
                 }
-    except Exception as e:
+    except (httpx.HTTPError, ValueError) as e:
         state = simulator.get_state()
         return {**state.weather, "source": "Simulator Mock (API Offline)", "error": str(e)}
     raise HTTPException(status_code=500, detail="Weather query failed")
@@ -241,9 +241,8 @@ async def geocode(q: str = Query(..., description="Query location name to search
                         "source": "Nominatim OpenStreetMap",
                     }
                 return {"message": "No locations found", "results": []}
-            else:
-                raise HTTPException(status_code=resp.status_code, detail="Nominatim API error")
-    except Exception as e:
+            raise HTTPException(status_code=resp.status_code, detail="Nominatim API error")
+    except (httpx.HTTPError, ValueError) as e:
         raise HTTPException(status_code=500, detail=f"Failed to geocode query: {str(e)}") from e
 
 
