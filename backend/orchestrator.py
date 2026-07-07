@@ -5,6 +5,7 @@ evaluations, and volunteer briefings using Gemini 2.5 Flash.
 """
 
 import json
+import sys
 from typing import Any, Callable, Dict, List
 
 import httpx
@@ -512,7 +513,7 @@ class GeminiOrchestrator:
         except Exception as e:
             return {"response": f"Orchestrator error occurred: {str(e)}", "tools_called": tools_called, "error": True}
 
-    async def _safe_generate(
+    async def safe_generate(
         self,
         prompt: str,
         config: types.GenerateContentConfig,
@@ -585,8 +586,6 @@ class GeminiOrchestrator:
             )
 
             def alert_fallback(inc: Any = incident) -> str:
-                import sys
-
                 exc = sys.exc_info()[1]
                 err_msg = str(exc) if exc else "Empty response"
                 fallback_dict = {
@@ -604,7 +603,7 @@ class GeminiOrchestrator:
                 }
                 return json.dumps(fallback_dict)
 
-            resp_str = await self._safe_generate(prompt, config, alert_fallback)
+            resp_str = await self.safe_generate(prompt, config, alert_fallback)
             try:
                 alert_data = json.loads(resp_str)
                 # Ensure the simulation incident ID is present
@@ -643,8 +642,6 @@ class GeminiOrchestrator:
         )
 
         def explain_fallback() -> str:
-            import sys
-
             exc = sys.exc_info()[1]
             if exc:
                 return (
@@ -653,7 +650,7 @@ class GeminiOrchestrator:
                 )
             return "Follow the listed recommended actions and stay safe."
 
-        return await self._safe_generate(prompt, config, explain_fallback)
+        return await self.safe_generate(prompt, config, explain_fallback)
 
     async def generate_shift_briefing(
         self, incidents: List[Dict[str, Any]], crowd_density: Dict[str, int], language: str = "English"
@@ -684,8 +681,6 @@ class GeminiOrchestrator:
         )
 
         def briefing_fallback() -> str:
-            import sys
-
             exc = sys.exc_info()[1]
             if exc:
                 return (
@@ -695,7 +690,7 @@ class GeminiOrchestrator:
                 )
             return "All clear. Normal operations active."
 
-        return await self._safe_generate(prompt, config, briefing_fallback)
+        return await self.safe_generate(prompt, config, briefing_fallback)
 
     async def generate_sustainability_briefing(self, metrics: Dict[str, Any], language: str = "English") -> str:
         """Generates narrative green sustainability operations summary using Gemini.
@@ -719,8 +714,6 @@ class GeminiOrchestrator:
         )
 
         def sustainability_fallback() -> str:
-            import sys
-
             exc = sys.exc_info()[1]
             if exc:
                 return (
@@ -730,7 +723,7 @@ class GeminiOrchestrator:
                 )
             return "Green metrics stable. MetLife Stadium operations within green limits."
 
-        return await self._safe_generate(prompt, config, sustainability_fallback)
+        return await self.safe_generate(prompt, config, sustainability_fallback)
 
 
 # Global orchestrator instance

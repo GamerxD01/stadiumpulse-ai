@@ -1,3 +1,7 @@
+[MASTER]
+ignore=tests,venv
+ignore-paths=^backend/tests/.*$
+
 [MESSAGES CONTROL]
 # Suppress false-positive or intentionally-accepted warnings:
 #
