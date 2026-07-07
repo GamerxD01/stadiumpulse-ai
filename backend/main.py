@@ -252,6 +252,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=500, description="Chat query text")
     history: List[Dict[str, str]] = []
     accessibility_mode: bool = False
+    language: str = "English"
 
 
 @app.post("/api/chat")
@@ -262,7 +263,10 @@ async def chat_endpoint(req: ChatRequest) -> Dict[str, Any]:
         req: ChatRequest object validation.
     """
     result = await orchestrator.chat(
-        user_message=req.message, history=req.history, accessibility_mode=req.accessibility_mode
+        user_message=req.message,
+        history=req.history,
+        accessibility_mode=req.accessibility_mode,
+        language=req.language,
     )
     return result
 
@@ -292,7 +296,9 @@ async def explain_alert_endpoint(req: ExplainRequest) -> Dict[str, Any]:
 
 
 @app.get("/api/briefing/shift")
-async def get_shift_briefing() -> Dict[str, str]:
+async def get_shift_briefing(
+    language: str = Query("English", description="Target translation language"),
+) -> Dict[str, str]:
     """Generates operations shift briefing logs summary using Gemini."""
     state = simulator.get_state()
     recent_incidents = [
@@ -315,12 +321,14 @@ async def get_shift_briefing() -> Dict[str, str]:
     ]
     all_incidents = recent_incidents + [inc.model_dump() for inc in state.incidents]
 
-    briefing = await orchestrator.generate_shift_briefing(all_incidents, state.crowd_density)
+    briefing = await orchestrator.generate_shift_briefing(all_incidents, state.crowd_density, language)
     return {"briefing": briefing}
 
 
 @app.get("/api/briefing/sustainability")
-async def get_sustainability_briefing() -> Dict[str, str]:
+async def get_sustainability_briefing(
+    language: str = Query("English", description="Target translation language"),
+) -> Dict[str, str]:
     """Generates narrative green sustainability operations summary using Gemini."""
     metrics = {
         "waste_diverted_percentage": 82.4,
@@ -330,7 +338,7 @@ async def get_sustainability_briefing() -> Dict[str, str]:
         "sustainability_score": "A-",
         "anomalies": "Slight waste build-up reported in Concourse East recycling bin #12",
     }
-    report = await orchestrator.generate_sustainability_briefing(metrics)
+    report = await orchestrator.generate_sustainability_briefing(metrics, language)
     return {"report": report}
 
 

@@ -309,7 +309,11 @@ class GeminiOrchestrator:
         )
 
     def _build_conversation_contents(
-        self, user_message: str, history: List[Dict[str, str]] | None, accessibility_mode: bool
+        self,
+        user_message: str,
+        history: List[Dict[str, str]] | None,
+        accessibility_mode: bool,
+        language: str = "English",
     ) -> List[Any]:
         """Converts message history and the current user query into a Gemini contents list.
 
@@ -317,6 +321,7 @@ class GeminiOrchestrator:
             user_message: The fan's current natural-language query.
             history: Prior conversation turns as role/text pairs.
             accessibility_mode: When True, appends the step-free routing suffix to the message.
+            language: Target language selected by user.
 
         Returns:
             Ordered list of types.Content objects ready for model inference.
@@ -328,6 +333,8 @@ class GeminiOrchestrator:
             contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
 
         full_message = user_message + (ACCESSIBILITY_MODE_SUFFIX if accessibility_mode else "")
+        if language and language != "English":
+            full_message += f" (Enforce translation: respond strictly in {language})."
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=full_message)]))
         return contents
 
@@ -356,7 +363,11 @@ class GeminiOrchestrator:
             return json.dumps({"error": f"Failed executing tool {tool_name}: {str(e)}"})
 
     async def chat(
-        self, user_message: str, history: List[Dict[str, str]] | None = None, accessibility_mode: bool = False
+        self,
+        user_message: str,
+        history: List[Dict[str, str]] | None = None,
+        accessibility_mode: bool = False,
+        language: str = "English",
     ) -> Dict[str, Any]:
         """Processes a chat query, executing tools if requested by the model.
 
@@ -368,11 +379,12 @@ class GeminiOrchestrator:
             user_message: Chat message text from the fan.
             history: List of past role/text message pairs for multi-turn context.
             accessibility_mode: When True, forces step-free route instructions.
+            language: Target translation language dropdown choice.
 
         Returns:
             Dictionary with keys 'response' (str) and 'tools_called' (list).
         """
-        contents = self._build_conversation_contents(user_message, history, accessibility_mode)
+        contents = self._build_conversation_contents(user_message, history, accessibility_mode, language)
         tools_called: List[Dict[str, Any]] = []
 
         try:
@@ -519,12 +531,15 @@ class GeminiOrchestrator:
                 f"2. Direct crowd flow. 3. Help fans. (Error: {str(e)})"
             )
 
-    async def generate_shift_briefing(self, incidents: List[Dict[str, Any]], crowd_density: Dict[str, int]) -> str:
+    async def generate_shift_briefing(
+        self, incidents: List[Dict[str, Any]], crowd_density: Dict[str, int], language: str = "English"
+    ) -> str:
         """Generates operations shift briefing logs summary using Gemini.
 
         Args:
             incidents: Recent active and resolved incident logs.
             crowd_density: Current zones crowd density metrics.
+            language: Target translation language chosen by the user.
         """
         prompt = f"""
         You are the Stadium Operations Director. Based on the following incident registry from the last 4 hours, generate a concise 3-bullet point operations briefing for the upcoming shift change. Highlight key alerts, actions taken, and outstanding issues.
@@ -534,6 +549,8 @@ class GeminiOrchestrator:
 
         Current Stadium Densities:
         {json.dumps(crowd_density)}
+
+        Target Language: {language}
         """
         try:
             response = self.client.models.generate_content(
@@ -541,8 +558,8 @@ class GeminiOrchestrator:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=(
-                        "You are a stadium ops chief. "
-                        "Output exactly 3 high-impact, professional bullet points."
+                        "You are a stadium ops chief. Output exactly 3 high-impact, professional "
+                        "bullet points strictly in the requested target language."
                     )
                 ),
             )
@@ -554,16 +571,19 @@ class GeminiOrchestrator:
                 f"• Shift transition in progress. (Error generating: {str(e)})"
             )
 
-    async def generate_sustainability_briefing(self, metrics: Dict[str, Any]) -> str:
+    async def generate_sustainability_briefing(self, metrics: Dict[str, Any], language: str = "English") -> str:
         """Generates narrative green sustainability operations summary using Gemini.
 
         Args:
             metrics: Raw metrics containing waste percentages, energy, water details.
+            language: Target translation language chosen by the user.
         """
         prompt = f"""
         Draft a professional, narrative sustainability summary for the post-match report.
         Use these raw metrics to draft the report:
         {json.dumps(metrics)}
+
+        Target Language: {language}
         """
         try:
             response = self.client.models.generate_content(
@@ -571,8 +591,8 @@ class GeminiOrchestrator:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=(
-                        "You are a green-operations advisor. "
-                        "Summarize sustainability performance in 2 paragraphs."
+                        "You are a green-operations advisor. Summarize sustainability performance "
+                        "in 2 paragraphs strictly in the requested target language."
                     )
                 ),
             )

@@ -22,7 +22,7 @@ import * as api from '../services/api';
  *   generateSustainabilityBriefing: Function
  * }}
  */
-export default function useStaffBriefing(isServerOffline) {
+export default function useStaffBriefing(isServerOffline, language = 'English') {
   const [shiftBriefing, setShiftBriefing] = useState('');
   const [loadingShift, setLoadingShift] = useState(false);
   const [sustainabilityReport, setSustainabilityReport] = useState('');
@@ -39,15 +39,17 @@ export default function useStaffBriefing(isServerOffline) {
     setLoadingShift(true);
     if (isServerOffline) {
       setTimeout(() => {
-        setShiftBriefing(
-          '• Operational briefing for shift handover:\n- Gate B turnstiles experienced a critical crowd density peak of 96%. Crowds have been successfully routed to Gates A/C/D.\n- Medical response treated an escalator incident near Gate C; escalators are back in operation.\n- Train transit congestion remains high; rideshare queues remain active at Zone 4.'
-        );
+        const isSpanish = language === 'Spanish';
+        const txt = isSpanish
+          ? '• Resumen operativo para el cambio de turno:\n- Los torniquetes de la Puerta B registraron un pico crítico de densidad de multitud del 96%. Los aficionados fueron desviados con éxito a las Puertas A/C/D.\n- El equipo de respuesta médica atendió un incidente en la escalera mecánica cerca de la Puerta C; las escaleras mecánicas han vuelto a funcionar.\n- La congestión del transporte ferroviario sigue siendo alta; las colas para viajes compartidos siguen activas en la Zona 4.'
+          : '• Operational briefing for shift handover:\n- Gate B turnstiles experienced a critical crowd density peak of 96%. Crowds have been successfully routed to Gates A/C/D.\n- Medical response treated an escalator incident near Gate C; escalators are back in operation.\n- Train transit congestion remains high; rideshare queues remain active at Zone 4.';
+        setShiftBriefing(txt);
         setLoadingShift(false);
       }, 1000);
       return;
     }
     try {
-      const data = await api.fetchShiftBriefing();
+      const data = await api.fetchShiftBriefing(language);
       setShiftBriefing(data.briefing);
     } catch {
       setShiftBriefing('Error generating shift briefing.');
@@ -67,15 +69,17 @@ export default function useStaffBriefing(isServerOffline) {
     setLoadingSustainability(true);
     if (isServerOffline) {
       setTimeout(() => {
-        setSustainabilityReport(
-          'The sustainability report indicates a solid 82.4% waste recycling diversion rate. Solar contribution added 8,400 kWh of clean power to the stadium grid. General grade: A-. One water anomaly: high usage reported at Concourse East restrooms, resolved by fixtures inspections.'
-        );
+        const isSpanish = language === 'Spanish';
+        const txt = isSpanish
+          ? 'El informe de sostenibilidad indica una tasa sólida del 82.4% de desvío de reciclaje de residuos. La contribución solar agregó 8,400 kWh de energía limpia a la red eléctrica del estadio. Calificación general: A-. Una anomalía del agua: alto consumo informado en los baños de Concourse East, resuelto mediante inspecciones de accesorios.'
+          : 'The sustainability report indicates a solid 82.4% waste recycling diversion rate. Solar contribution added 8,400 kWh of clean power to the stadium grid. General grade: A-. One water anomaly: high usage reported at Concourse East restrooms, resolved by fixtures inspections.';
+        setSustainabilityReport(txt);
         setLoadingSustainability(false);
       }, 1000);
       return;
     }
     try {
-      const data = await api.fetchSustainabilityBriefing();
+      const data = await api.fetchSustainabilityBriefing(language);
       setSustainabilityReport(data.report);
     } catch {
       setSustainabilityReport('Error generating sustainability summary.');

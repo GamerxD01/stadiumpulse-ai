@@ -30,7 +30,8 @@ export default function App() {
   const { messages, chatInput, sendingChat, setChatInput, setMessages, handleSendMessage } = useChat(
     isServerOffline,
     accessibilityMode,
-    stadiumState
+    stadiumState,
+    language
   );
   const {
     shiftBriefing,
@@ -39,7 +40,7 @@ export default function App() {
     loadingSustainability,
     generateShiftBriefing,
     generateSustainabilityBriefing
-  } = useStaffBriefing(isServerOffline);
+  } = useStaffBriefing(isServerOffline, language);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">

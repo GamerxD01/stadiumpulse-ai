@@ -28,9 +28,10 @@ const DEFAULT_CHAT_REPLY =
  * @param {boolean} isServerOffline - Whether the FastAPI backend is currently unreachable.
  * @param {boolean} accessibilityMode - When true, forces step-free routing in all queries.
  * @param {Object|null} stadiumState - Live simulator state used to enrich offline replies.
+ * @param {string} language - Currently selected UI language.
  * @returns {{ messages: Array<{role: string, text: string, tools?: Array}>, chatInput: string, sendingChat: boolean, setChatInput: Function, setMessages: Function, handleSendMessage: Function }}
  */
-export default function useChat(isServerOffline, accessibilityMode, stadiumState) {
+export default function useChat(isServerOffline, accessibilityMode, stadiumState, language) {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [chatInput, setChatInput] = useState('');
   const [sendingChat, setSendingChat] = useState(false);
@@ -111,7 +112,7 @@ export default function useChat(isServerOffline, accessibilityMode, stadiumState
     }));
 
     try {
-      const data = await api.sendChatMessage(text, history, accessibilityMode);
+      const data = await api.sendChatMessage(text, history, accessibilityMode, language);
       setMessages((prev) => [...prev, { role: 'model', text: data.response, tools: data.tools_called }]);
     } catch {
       setMessages((prev) => [...prev, { role: 'model', text: 'Network error. Make sure backend is running.' }]);

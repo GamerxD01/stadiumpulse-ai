@@ -39,14 +39,15 @@ export async function fetchAlerts() {
  * @returns {Promise<{response: string, tools_called: Array<Object>}>} AI reply and tool trace.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function sendChatMessage(message, history, accessibilityMode) {
+export async function sendChatMessage(message, history, accessibilityMode, language) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message,
       history,
-      accessibility_mode: accessibilityMode
+      accessibility_mode: accessibilityMode,
+      language
     })
   });
   if (!res.ok) throw new Error('Offline');
@@ -75,11 +76,12 @@ export async function explainAlert(alert, language) {
  * Requests an AI-generated operations shift handover briefing.
  * Summarizes the last 4 hours of incidents and crowd data in 3 bullet points.
  *
+ * @param {string} language - Target translation language chosen by the user.
  * @returns {Promise<{briefing: string}>} Formatted shift briefing text.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchShiftBriefing() {
-  const res = await fetch(`${API_BASE}/briefing/shift`);
+export async function fetchShiftBriefing(language) {
+  const res = await fetch(`${API_BASE}/briefing/shift?language=${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error('Offline');
   return res.json();
 }
@@ -88,11 +90,12 @@ export async function fetchShiftBriefing() {
  * Requests an AI-generated post-match sustainability performance report.
  * Covers waste diversion, solar energy contribution, and water usage.
  *
+ * @param {string} language - Target translation language chosen by the user.
  * @returns {Promise<{report: string}>} Narrative sustainability report text.
  * @throws {Error} If the server returns a non-OK response or is unreachable.
  */
-export async function fetchSustainabilityBriefing() {
-  const res = await fetch(`${API_BASE}/briefing/sustainability`);
+export async function fetchSustainabilityBriefing(language) {
+  const res = await fetch(`${API_BASE}/briefing/sustainability?language=${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error('Offline');
   return res.json();
 }
