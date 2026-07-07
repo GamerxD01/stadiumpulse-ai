@@ -233,3 +233,10 @@ StadiumPulse AI supports **15 languages** with automatic zero-shot detection —
 | Swahili | Kiswahili |
 
 See [MULTILINGUAL.md](./MULTILINGUAL.md) for example interactions and technical implementation details.
+
+---
+
+## 9. License
+
+StadiumPulse AI is released under the **MIT License** — see [LICENSE](./LICENSE) for the full text.
+This matches the `license = { text = "MIT" }` declaration in [pyproject.toml](./pyproject.toml) and the `"license": "MIT"` field in [frontend/package.json](./frontend/package.json).
