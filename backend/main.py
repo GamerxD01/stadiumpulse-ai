@@ -386,6 +386,91 @@ async def recommend_transportation() -> Dict[str, Any]:
         return json.loads(fallback())  # type: ignore[no-any-return]
 
 
+@app.get("/api/operations/decision-brief")
+async def get_operations_decision_brief(
+    language: str = Query("English", description="Target translation language"),
+) -> Dict[str, Any]:
+    """Generates an integrated FIFA World Cup 2026 operations decision brief.
+
+    The brief intentionally synthesizes every challenge area into one command-center
+    output so organizers can act across fan navigation, crowd flow, accessibility,
+    transit, sustainability, multilingual messaging, operational intelligence, and
+    real-time decision support from a single GenAI surface.
+    """
+    state = simulator.get_state()
+    active_incidents = [incident.model_dump() for incident in state.incidents if incident.status == "Active"]
+    prompt = f"""
+    Create a FIFA World Cup 2026 stadium command-center decision brief from the live operational state.
+
+    Current Crowd Densities:
+    {json.dumps(state.crowd_density)}
+
+    Current Transit Status:
+    {json.dumps(state.transit_status)}
+
+    Active Incidents:
+    {json.dumps(active_incidents)}
+
+    Current Weather:
+    {json.dumps(state.weather)}
+
+    Target Language: {language}
+
+    Return JSON with exactly these keys:
+    - navigation: one actionable fan wayfinding recommendation
+    - crowd_management: one crowd-flow action
+    - accessibility: one ADA or step-free support action
+    - transportation: one departure or transit action
+    - sustainability: one resource-efficiency action
+    - multilingual_assistance: one fan/staff communication action
+    - operational_intelligence: one supervisor insight
+    - real_time_decision_support: one immediate decision with rationale
+    - priority_level: Low, Medium, High, or Critical
+    """
+
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        system_instruction=(
+            "You are StadiumPulse AI, a FIFA World Cup 2026 venue operations director. "
+            "Return concise JSON only, strictly in the requested target language."
+        ),
+    )
+
+    def fallback() -> str:
+        max_density_zone, max_density = max(state.crowd_density.items(), key=lambda item: item[1])
+        best_mode, best_info = min(state.transit_status.items(), key=lambda item: item[1]["wait_time_mins"])
+        priority = "Critical" if max_density >= 90 or active_incidents else "High" if max_density >= 75 else "Medium"
+        return json.dumps(
+            {
+                "navigation": f"Route fans away from {max_density_zone} and toward the least crowded open concourse.",
+                "crowd_management": f"Deploy flow teams to {max_density_zone}, currently at {max_density}% density.",
+                "accessibility": "Keep elevator banks, ADA restrooms, sensory rooms, and step-free routes staffed.",
+                "transportation": (
+                    f"Recommend {best_mode}; current wait is {best_info['wait_time_mins']} minutes "
+                    f"with {best_info['congestion']} congestion."
+                ),
+                "sustainability": "Shift energy and cleaning resources toward high-density zones only.",
+                "multilingual_assistance": (
+                    "Broadcast the same route and safety guidance in English, Spanish, and Arabic."
+                ),
+                "operational_intelligence": (
+                    f"Highest operational pressure is {max_density_zone}; monitor density and transit together."
+                ),
+                "real_time_decision_support": (
+                    "Open diversion lanes now if density continues rising during the next simulator refresh."
+                ),
+                "priority_level": priority,
+            }
+        )
+
+    resp_str = await orchestrator.safe_generate(prompt, config, fallback)
+    try:
+        data = json.loads(resp_str)
+    except Exception:
+        data = json.loads(fallback())
+    return data  # type: ignore[no-any-return]
+
+
 class ExplainRequest(BaseModel):
     """Pydantic schema validator for alert explanation details."""
 

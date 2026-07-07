@@ -42,10 +42,13 @@ export default function App() {
     loadingOptimizations,
     transportationRecommendation,
     loadingTransportation,
+    decisionBrief,
+    loadingDecisionBrief,
     generateShiftBriefing,
     generateSustainabilityBriefing,
     generateSustainabilityOptimizations,
-    generateTransportationRecommendation
+    generateTransportationRecommendation,
+    generateDecisionBrief
   } = useStaffBriefing(isServerOffline, language);
 
   return (
@@ -101,6 +104,9 @@ export default function App() {
             transportationRecommendation={transportationRecommendation}
             loadingTransportation={loadingTransportation}
             onGenerateTransportationRecommendation={generateTransportationRecommendation}
+            decisionBrief={decisionBrief}
+            loadingDecisionBrief={loadingDecisionBrief}
+            onGenerateDecisionBrief={generateDecisionBrief}
           />
         )}
       </main>

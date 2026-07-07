@@ -115,6 +115,64 @@ def test_sustainability_briefing_gemini_exception_returns_fallback(
 
 
 # ---------------------------------------------------------------------------
+# Integrated Decision Brief
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def mock_gemini_decision_brief():
+    """Mock Gemini to return an integrated World Cup decision brief."""
+    original_generate = orchestrator.client.models.generate_content
+
+    mock_resp = MagicMock()
+    mock_resp.text = """
+    {
+      "navigation": "Route fans away from Gate B.",
+      "crowd_management": "Deploy flow teams to Gate B.",
+      "accessibility": "Keep step-free elevator banks staffed.",
+      "transportation": "Recommend shuttle buses before rail.",
+      "sustainability": "Use eco-mode in low-density zones.",
+      "multilingual_assistance": "Broadcast guidance in English and Spanish.",
+      "operational_intelligence": "Gate B is the highest pressure zone.",
+      "real_time_decision_support": "Open overflow lanes immediately.",
+      "priority_level": "High"
+    }
+    """
+
+    orchestrator.client.models.generate_content = MagicMock(return_value=mock_resp)
+    yield
+    orchestrator.client.models.generate_content = original_generate
+
+
+def test_operations_decision_brief_covers_all_challenge_areas(mock_gemini_decision_brief):
+    """Decision brief endpoint returns every FIFA World Cup 2026 challenge area."""
+    response = client.get("/api/operations/decision-brief")
+    assert response.status_code == 200
+    data = response.json()
+    expected_keys = {
+        "navigation",
+        "crowd_management",
+        "accessibility",
+        "transportation",
+        "sustainability",
+        "multilingual_assistance",
+        "operational_intelligence",
+        "real_time_decision_support",
+        "priority_level",
+    }
+    assert expected_keys.issubset(data.keys())
+
+
+def test_operations_decision_brief_fallback_when_gemini_unavailable(mock_gemini_shift_exception):
+    """Decision brief endpoint falls back to deterministic simulator-derived guidance."""
+    response = client.get("/api/operations/decision-brief?language=Spanish")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["priority_level"] in {"Low", "Medium", "High", "Critical"}
+    assert "transportation" in data
+
+
+# ---------------------------------------------------------------------------
 # Explain Alert
 # ---------------------------------------------------------------------------
 

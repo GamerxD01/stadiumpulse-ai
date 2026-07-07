@@ -5,6 +5,8 @@
 
 **StadiumPulse AI** is a single GenAI "brain" that sits behind three connected web experiences — a Fan Companion, a Staff/Volunteer Copilot, and an Organizer Command Center — turning raw stadium sensor data (crowd counts, turnstile logs, transit lines, ticket data) into real-time, multilingual, natural-language guidance for everyone inside a World Cup venue.
 
+The Organizer Command Center includes a **World Cup 2026 Decision Brief**: one GenAI-generated command output that synthesizes all eight challenge areas in a single operator action plan: navigation, crowd management, accessibility, transportation, sustainability, multilingual assistance, operational intelligence, and real-time decision support.
+
 ---
 
 ## 1. Requirement Coverage Map (Prompt Wars Matrix)
@@ -19,6 +21,7 @@
 | **🌐 Multilingual Support** | **Auto-Lang Routing**: Natively detects and responds in 15 languages — Spanish, Hindi, Arabic, French, Portuguese, Japanese, Korean, Mandarin, German, Italian, Dutch, Russian, Turkish, Swahili, English. | Native LLM Language Logic | [orchestrator.py:SYSTEM_INSTRUCTION](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) · [MULTILINGUAL.md](./MULTILINGUAL.md) |
 | **📊 Operational Intel** | **Shift handover briefing**: Drafts 3-bullet handover reports for supervisor transitions. | On-Demand Briefing Gen | [main.py:get_shift_briefing](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
 | **🚨 Decision Support** | **Staff Copilot alerts**: Evaluates emergencies with confidence levels and reasoning. | Structured JSON Safety Plans | [orchestrator.py:evaluate_alerts](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py) |
+| **Unified Matchday Command** | **World Cup 2026 Decision Brief**: Generates one command-center action brief covering every brief area at once. | GenAI JSON Decision Brief | [main.py:get_operations_decision_brief](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) |
 
 ---
 
@@ -86,7 +89,7 @@ To enforce clean separation of concerns and high maintainability, the Vite React
     *   **`layout/`**: Page layout wrappers ([Header.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Header.jsx), [Navigation.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Navigation.jsx), [Footer.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/layout/Footer.jsx)).
     *   **`fan-companion/`**: Chat boxes and user query inputs ([FanCompanionChat.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/FanCompanionChat.jsx), [ChatMessage.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/ChatMessage.jsx), [ChatInput.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/fan-companion/ChatInput.jsx)).
     *   **`staff-copilot/`**: Alert plans feed and explain buttons ([StaffCopilotFeed.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/StaffCopilotFeed.jsx), [AlertCard.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/AlertCard.jsx), [ExplainAlertButton.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/staff-copilot/ExplainAlertButton.jsx)).
-    *   **`organizer-dashboard/`**: Visualization tools and auto-report compilation panels ([OrganizerDashboard.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/OrganizerDashboard.jsx), [DensityChart.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/DensityChart.jsx), [ShiftBriefingPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/ShiftBriefingPanel.jsx), [SustainabilityPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/SustainabilityPanel.jsx)).
+    *   **`organizer-dashboard/`**: Visualization tools, decision briefs, transportation recommendations, and auto-report compilation panels ([OrganizerDashboard.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/OrganizerDashboard.jsx), [DecisionBriefPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/DecisionBriefPanel.jsx), [TransportationPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/TransportationPanel.jsx), [GreenOpsPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/GreenOpsPanel.jsx), [DensityChart.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/DensityChart.jsx), [ShiftBriefingPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/ShiftBriefingPanel.jsx), [SustainabilityPanel.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/organizer-dashboard/SustainabilityPanel.jsx)).
     *   **`shared/`**: Reusable shared UI nodes ([LoadingSpinner.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/shared/LoadingSpinner.jsx), [ErrorBanner.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/components/shared/ErrorBanner.jsx)).
 *   **`src/App.jsx`**: Orchestrates top-level application tabs routing and layout structure in under 100 lines ([App.jsx](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/frontend/src/App.jsx)).
 
@@ -107,7 +110,7 @@ Tap "Explain Alert" to translate technical operational logs into plain, voluntee
 ![Volunteer Plain-English Guide](screenshots/critical_alert_explained_1783340994100.png)
 
 ### 📊 Organizer Command Center & Auto Reports
-Track live metrics on Recharts charts and compile post-match shift briefing cards using Gemini.
+Track live metrics on Recharts charts, generate a World Cup 2026 Decision Brief across all eight prompt areas, and compile post-match shift briefing cards using Gemini.
 ![Organizer Panel Briefings](screenshots/shift_briefing_generated_1783341015480.png)
 
 ---
@@ -205,6 +208,7 @@ StadiumPulse AI was built specifically to address the FIFA World Cup 2026 proble
 | **Multilingual Assistance** | Gemini auto-detects 15 languages and responds natively with no translation API | [`orchestrator.py:_build_conversation_contents`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L404) | ✅ Solid |
 | **Operational Intelligence** | `generate_shift_briefing()` — 3-bullet AI shift handover for supervisor transitions | [`orchestrator.py:generate_shift_briefing`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L660) | ✅ Solid |
 | **Real-Time Decision Support** | Live simulator + Gemini `evaluate_alerts()` with confidence scores and structured action plans | [`orchestrator.py:evaluate_alerts`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/orchestrator.py#L542) | ✅ Solid |
+| **Integrated Command Brief** | `/api/operations/decision-brief` synthesizes all eight areas into one GenAI action plan for organizers | [`main.py:get_operations_decision_brief`](file:///c:/Users/Chandra%20Prakash/Desktop/code/promptwars/backend/main.py) | ✅ Solid |
 
 > See [MULTILINGUAL.md](./MULTILINGUAL.md) for full multilingual capability documentation with example prompts in 6 languages.
 

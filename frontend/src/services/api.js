@@ -124,6 +124,18 @@ export function fetchTransportationRecommendation() {
 }
 
 /**
+ * Requests an integrated command-center decision brief covering all FIFA World Cup 2026 challenge areas.
+ *
+ * @param {string} language - Target translation language chosen by the user.
+ * @returns {Promise<Object>} Decision brief with navigation, crowd, accessibility, transit, sustainability, language,
+ *   intelligence, and real-time decision support fields.
+ * @throws {Error} If the server returns a non-OK response or is unreachable.
+ */
+export function fetchOperationsDecisionBrief(language) {
+  return request(`${API_BASE}/operations/decision-brief?language=${encodeURIComponent(language)}`);
+}
+
+/**
  * Triggers a simulated incident spike on the backend state machine.
  *
  * @param {'crowd' | 'medical' | 'transit' | 'clear'} spikeType - The type of incident to simulate.

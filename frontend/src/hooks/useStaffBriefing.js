@@ -31,6 +31,8 @@ export default function useStaffBriefing(isServerOffline, language = 'English') 
   const [loadingOptimizations, setLoadingOptimizations] = useState(false);
   const [transportationRecommendation, setTransportationRecommendation] = useState(null);
   const [loadingTransportation, setLoadingTransportation] = useState(false);
+  const [decisionBrief, setDecisionBrief] = useState(null);
+  const [loadingDecisionBrief, setLoadingDecisionBrief] = useState(false);
 
   /**
    * Requests an AI-generated shift handover briefing from the backend.
@@ -170,6 +172,50 @@ export default function useStaffBriefing(isServerOffline, language = 'English') 
     }
   };
 
+  /**
+   * Requests an integrated command-center decision brief covering every challenge area.
+   *
+   * @returns {Promise<void>}
+   */
+  const generateDecisionBrief = async () => {
+    setLoadingDecisionBrief(true);
+    if (isServerOffline) {
+      setTimeout(() => {
+        setDecisionBrief({
+          priority_level: 'High',
+          navigation: 'Route fans from Gate B toward Gate A and Concourse East to reduce entry pressure.',
+          crowd_management: 'Deploy volunteers to Gate B and Concourse West until densities fall below 75%.',
+          accessibility: 'Reserve Elevator Bank North-West for step-free detours and ADA guest assistance.',
+          transportation: 'Recommend Shuttle Bus departures first because current train waits remain elevated.',
+          sustainability: 'Move escalators in low-density zones to eco-mode and redeploy cleaning staff by density.',
+          multilingual_assistance: 'Publish the same route alert in English, Spanish, Arabic, and Portuguese.',
+          operational_intelligence: 'Gate B is the main pressure point for the next shift handover.',
+          real_time_decision_support: 'Open overflow lanes now if the next sensor refresh stays above 85% density.'
+        });
+        setLoadingDecisionBrief(false);
+      }, 1000);
+      return;
+    }
+    try {
+      const data = await api.fetchOperationsDecisionBrief(language);
+      setDecisionBrief(data);
+    } catch {
+      setDecisionBrief({
+        priority_level: 'Monitor',
+        navigation: 'Decision brief is unavailable. Continue using live density and transit panels.',
+        crowd_management: 'Maintain standard crowd monitoring.',
+        accessibility: 'Keep ADA support staff posted at guest services.',
+        transportation: 'Use current wait-time table for manual transit recommendations.',
+        sustainability: 'Continue baseline resource monitoring.',
+        multilingual_assistance: 'Use prepared multilingual safety templates.',
+        operational_intelligence: 'Supervisor review required.',
+        real_time_decision_support: 'Recheck after the next simulator refresh.'
+      });
+    } finally {
+      setLoadingDecisionBrief(false);
+    }
+  };
+
   return {
     shiftBriefing,
     loadingShift,
@@ -179,9 +225,12 @@ export default function useStaffBriefing(isServerOffline, language = 'English') 
     loadingOptimizations,
     transportationRecommendation,
     loadingTransportation,
+    decisionBrief,
+    loadingDecisionBrief,
     generateShiftBriefing,
     generateSustainabilityBriefing,
     generateSustainabilityOptimizations,
-    generateTransportationRecommendation
+    generateTransportationRecommendation,
+    generateDecisionBrief
   };
 }

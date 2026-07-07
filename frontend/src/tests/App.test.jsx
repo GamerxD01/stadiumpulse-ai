@@ -111,10 +111,13 @@ describe('StadiumPulse AI Frontend Tests', () => {
     const sustainBtn = screen.getByRole('button', { name: /Generate Narrative/i });
     const transportBtn = screen.getByRole('button', { name: /Recommend Route/i });
     const optimizeBtn = screen.getByRole('button', { name: /Optimize Ops/i });
+    const decisionBriefBtn = screen.getByRole('button', { name: /Generate Brief/i });
     expect(shiftBtn).toBeTruthy();
     expect(sustainBtn).toBeTruthy();
     expect(transportBtn).toBeTruthy();
     expect(optimizeBtn).toBeTruthy();
+    expect(decisionBriefBtn).toBeTruthy();
+    expect(screen.getByText(/World Cup 2026 Decision Brief/i)).toBeTruthy();
   });
 
   test('staff copilot panel renders all five spike trigger buttons', () => {
