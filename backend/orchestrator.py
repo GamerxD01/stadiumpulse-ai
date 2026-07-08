@@ -557,6 +557,94 @@ class GeminiOrchestrator:
         except Exception as e:
             return json.dumps({"error": f"Failed executing tool {tool_name}: {str(e)}"})
 
+    def _detect_accessibility_mode(self, user_message: str, accessibility_mode: bool) -> bool:
+        """Returns True when ADA/step-free need is detected in the user message.
+
+        Scans the lowercased message for any multilingual ADA keyword from the
+        module-level _ADA_KEYWORDS list.  The caller's ``accessibility_mode``
+        flag is also accepted and treated as an override so an already-True
+        value is always preserved.
+
+        Args:
+            user_message: Raw chat message text from the fan.
+            accessibility_mode: Existing accessibility flag from the caller.
+
+        Returns:
+            True if accessibility mode should be active, False otherwise.
+        """
+        if accessibility_mode:
+            return True
+        msg_lower = user_message.lower()
+        return any(kw in msg_lower for kw in _ADA_KEYWORDS)
+
+    def _process_tool_calls(self, response: Any, contents: List[Any], accessibility_mode: bool) -> tuple[Any, List[Dict[str, Any]]]:
+        """Executes one round of model-requested tool calls and appends results to contents.
+
+        Appends the model's function-call turn to the conversation, dispatches
+        each requested tool, collects the JSON result strings, appends the tool
+        response turn, then re-invokes the model so the caller can check whether
+        further tool calls are needed.
+
+        Args:
+            response: The model response containing one or more function_calls.
+            contents: The mutable conversation contents list to extend in place.
+            accessibility_mode: Passed through to _execute_tool_call for route forcing.
+
+        Returns:
+            A tuple of (next_response, tools_called_this_round) where
+            next_response is the updated model response after tool results are
+            submitted and tools_called_this_round is the list of tool-call
+            records appended during this round.
+        """
+        model_parts = [
+            types.Part.from_function_call(name=fc.name or "", args=fc.args or {})
+            for fc in response.function_calls
+        ]
+        contents.append(types.Content(role="model", parts=model_parts))
+
+        tool_response_parts = []
+        tools_called_this_round: List[Dict[str, Any]] = []
+        for fc in response.function_calls:
+            tool_name = fc.name or ""
+            tool_args = fc.args or {}
+            tools_called_this_round.append({"name": tool_name, "args": dict(tool_args)})
+            result_str = self._execute_tool_call(tool_name, tool_args, accessibility_mode)
+            tool_response_parts.append(
+                types.Part.from_function_response(name=tool_name, response={"result": result_str})
+            )
+
+        contents.append(types.Content(role="tool", parts=tool_response_parts))
+        next_response = self._generate_content(contents)
+        return next_response, tools_called_this_round
+
+    def _run_tool_calling_loop(
+        self, initial_response: Any, contents: List[Any], accessibility_mode: bool
+    ) -> tuple[Any, List[Dict[str, Any]]]:
+        """Drives the tool-calling loop until the model stops requesting tools.
+
+        Iterates up to MAX_TOOL_ITERATIONS times. Each iteration delegates one
+        round of tool execution to _process_tool_calls, which appends both the
+        model and tool turns to ``contents`` and returns the next model response.
+
+        Args:
+            initial_response: The first model response, which may contain function calls.
+            contents: The mutable conversation contents list passed to each model call.
+            accessibility_mode: Forwarded to _process_tool_calls for route forcing.
+
+        Returns:
+            A tuple of (final_response, all_tools_called) where final_response
+            is the last model response (no pending function calls) and
+            all_tools_called is the full list of tool-call records across all rounds.
+        """
+        response = initial_response
+        all_tools_called: List[Dict[str, Any]] = []
+        iterations = 0
+        while response.function_calls and iterations < MAX_TOOL_ITERATIONS:
+            iterations += 1
+            response, round_calls = self._process_tool_calls(response, contents, accessibility_mode)
+            all_tools_called.extend(round_calls)
+        return response, all_tools_called
+
     async def chat(
         self,
         user_message: str,
@@ -564,11 +652,11 @@ class GeminiOrchestrator:
         accessibility_mode: bool = False,
         language: str = "English",
     ) -> Dict[str, Any]:
-        """Processes a chat query, executing tools if requested by the model.
+        """Orchestrates a single chat turn by delegating to focused helpers.
 
-        Builds the conversation history, enters the tool-call loop up to
-        MAX_TOOL_ITERATIONS times, then returns the final model text along
-        with a trace of every tool that was invoked.
+        Detects accessibility needs, builds conversation contents, runs the
+        tool-calling loop up to MAX_TOOL_ITERATIONS times, then returns the
+        final model text with a trace of every tool that was invoked.
 
         Args:
             user_message: Chat message text from the fan.
@@ -579,47 +667,15 @@ class GeminiOrchestrator:
         Returns:
             Dictionary with keys 'response' (str) and 'tools_called' (list).
         """
-        # Auto-detect step-free navigation needs from multilingual ADA keywords.
-        msg_lower = user_message.lower()
-        if any(kw in msg_lower for kw in _ADA_KEYWORDS):
-            accessibility_mode = True
-
+        accessibility_mode = self._detect_accessibility_mode(user_message, accessibility_mode)
         contents = self._build_conversation_contents(user_message, history, accessibility_mode, language)
-        tools_called: List[Dict[str, Any]] = []
 
         try:
-            response = self._generate_content(contents)
-
-            iterations = 0
-            while response.function_calls and iterations < MAX_TOOL_ITERATIONS:
-                iterations += 1
-
-                # Append the model's function-call turn to the conversation
-                model_parts = [
-                    types.Part.from_function_call(name=fc.name or "", args=fc.args or {})
-                    for fc in response.function_calls
-                ]
-                contents.append(types.Content(role="model", parts=model_parts))
-
-                # Execute each requested tool and collect results
-                tool_response_parts = []
-                for fc in response.function_calls:
-                    tool_name = fc.name or ""
-                    tool_args = fc.args or {}
-                    tools_called.append({"name": tool_name, "args": dict(tool_args)})
-                    result_str = self._execute_tool_call(tool_name, tool_args, accessibility_mode)
-                    tool_response_parts.append(
-                        types.Part.from_function_response(name=tool_name, response={"result": result_str})
-                    )
-
-                contents.append(types.Content(role="tool", parts=tool_response_parts))
-                response = self._generate_content(contents)
-
-            final_text = response.text or NO_RESPONSE_FALLBACK
-            return {"response": final_text, "tools_called": tools_called}
-
+            initial_response = self._generate_content(contents)
+            final_response, tools_called = self._run_tool_calling_loop(initial_response, contents, accessibility_mode)
+            return {"response": final_response.text or NO_RESPONSE_FALLBACK, "tools_called": tools_called}
         except Exception as e:
-            return {"response": f"Orchestrator error occurred: {str(e)}", "tools_called": tools_called, "error": True}
+            return {"response": f"Orchestrator error occurred: {str(e)}", "tools_called": [], "error": True}
 
     async def safe_generate(
         self,
