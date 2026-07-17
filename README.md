@@ -140,7 +140,7 @@ pip install fastapi uvicorn google-genai python-dotenv httpx pydantic
 python -m uvicorn backend.main:app --port 8000 --host 0.0.0.0
 ```
 
-### 3. Run the React Frontend Client
+### 3. Run the React Frontend Client...
 ```bash
 # Navigate to frontend folder
 cd frontend
