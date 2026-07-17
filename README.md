@@ -22,7 +22,7 @@
 
 ---
 
-## 2. System Architecture
+## 2. System Architecture.
 
 ```mermaid
 graph TD
