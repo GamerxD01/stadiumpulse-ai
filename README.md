@@ -76,7 +76,7 @@ graph TD
     DB --> Org
 ```
 
-### Frontend Component Architecture
+### Frontend Component Architecture..
 
 To enforce clean separation of concerns and high maintainability, the Vite React client is structured into modular layers:
 
