@@ -22,7 +22,7 @@ StadiumPulse AI's Fan Companion Chat automatically detects the language of the f
 | Dutch | Nederlands | "Wat is de wachttijd voor de pendelbus?" |
 | Russian | Русский | "Какова плотность толпы у Ворот А?" |
 | Turkish | Türkçe | "Tekerlekli sandalye erişimi için hangi asansörü kullanmalıyım?" |
-| Swahili | Kiswahili | "Je, kuna msongamano mkubwa mlangoni A?" |
+| Swahili | Kiswahili | "Je, kuna msongamano mkubwa mlangoni A?" ||
 
 ---
 
